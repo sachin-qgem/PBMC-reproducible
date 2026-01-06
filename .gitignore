@@ -1,0 +1,27 @@
+# --- Python & Runtime ---
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+.env
+
+# --- Jupyter Notebooks ---
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+# --- Data & Artifacts (CRITICAL) ---
+# We do not push heavy matter to the repository.
+data/
+models/*.h5
+models/*.pt
+models/*.pth
+models/*.pkl
+
+# --- OS Noise ---
+.DS_Store
+Thumbs.db
+
+# --- Logs ---
+logs/
+*.log
