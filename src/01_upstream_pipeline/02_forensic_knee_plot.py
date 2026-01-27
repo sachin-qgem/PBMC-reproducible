@@ -9,7 +9,7 @@ import os
 #----------------
 H5_PATH = "data/raw/pbmc3k_molecule_info.h5"
 FILTERED_MATRIX_PATH = "data/raw/pbmc3k_filtered_gene_bc_matrices/hg19/barcodes.tsv"
-
+GENES_TSV_PATH = "data/raw/pbmc3k_filtered_gene_bc_matrices/hg19/genes.tsv"
 def generate_knee_plot():
     print("   °°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°")
     print ("Reconstructing the knee")
@@ -19,7 +19,22 @@ def generate_knee_plot():
     # 'gem_group', 'gene', 'nonconf_mapped_reads', 'reads', 'umi',
     # 'umi_corrected_reads', 'unmapped_reads'],
     with h5py.File(H5_PATH,'r') as fh5:
-        barcode_indices = np.array(fh5['barcode'][:])
+        barcode_indices_i = np.array(fh5['barcode'][:])
+        gene_indices_i = fh5['gene'][:]
+
+    # 1. LOAD GENE NAMES (The Dictionary)
+    print("   -> Loading Gene definitions...")
+    genes_df = pd.read_csv(GENES_TSV_PATH, sep='\t', header=None)
+    
+    n_genes_ref = len(genes_df)
+
+    valid_mask = gene_indices_i < n_genes_ref
+    
+    if not valid_mask.all():
+        n_dropped = (~valid_mask).sum()
+        print(f"    REMOVING {n_dropped} EVENTS (Unmapped/Garbage Genes).")
+        barcode_indices = barcode_indices_i[valid_mask]
+        
 
     print(f"    -> Loaded {len(barcode_indices):,} molecular events.")
 

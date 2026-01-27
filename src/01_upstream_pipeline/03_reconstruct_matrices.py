@@ -37,7 +37,7 @@ def decode_barcode(n, length=16):
     return "".join(reversed(seq))
 
 def reconstruct():
-    print("🚀 SATURN PROTOCOL: FINAL RECONSTRUCTION (DECODING MODE)")
+    print(" SATURN PROTOCOL: FINAL RECONSTRUCTION (DECODING MODE)")
 
     # 1. LOAD GENE NAMES (The Dictionary)
     print("   -> Loading Gene definitions...")
@@ -70,7 +70,7 @@ def reconstruct():
     
     if not valid_mask.all():
         n_dropped = (~valid_mask).sum()
-        print(f"   ⚠️ REMOVING {n_dropped} EVENTS (Unmapped/Garbage Genes).")
+        print(f"    REMOVING {n_dropped} EVENTS (Unmapped/Garbage Genes).")
         bc_indices = bc_indices[valid_mask]
         gene_indices = gene_indices[valid_mask]
         counts = counts[valid_mask]
@@ -115,7 +115,7 @@ def reconstruct():
     print(f"   -> Saving Raw Matrix to {raw_out}...")
     write_10x(raw_matrix, decoded_barcodes, gene_ids, gene_names, raw_out)
 
-    print("✅ RECONSTRUCTION COMPLETE.")
+    print(" RECONSTRUCTION COMPLETE.")
 
 def write_10x(matrix, barcodes, g_ids, g_names, folder):
     os.makedirs(folder, exist_ok=True)
