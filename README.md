@@ -47,11 +47,17 @@ This is NOT a tutorial. This is a **Forensic Reconstruction**. We are auditing t
 │   │          ├── barcodes.tsv
 │   │          └── genes.tsv
 │   │
-│   └── objects/                   # The State Vectors (H5AD Checkpoints)
-│       ├── pbmc3k_raw.h5ad        # Output of P02
-│       ├── pbmc3k_qc.h5ad         # Output of P03
-│       ├── pbmc3k_norm.h5ad       # Output of P04
-│       └── pbmc3k_final.h5ad      # The Grand Unification Object (Phase IX)
+│   |── objects/                   # The State Vectors (H5AD Checkpoints)
+│   │   ├── pbmc3k_raw.h5ad        # Output of P02
+│   │   ├── pbmc3k_qc.h5ad         # Output of P03
+│   │   ├── pbmc3k_norm.h5ad       # Output of P04
+│   │   └── pbmc3k_final.h5ad      # The Grand Unification Object (Phase IX)
+│   │
+│   └── reconstructed_matrices_final/
+│       └── raw_gene_bc_matrices/
+│           ├── matrix.mtx
+│           ├── barcodes.tsv
+│           └── genes.tsv
 │
 │── results/
 │   │
@@ -77,13 +83,13 @@ This is NOT a tutorial. This is a **Forensic Reconstruction**. We are auditing t
 │
 └── src/
     ├── 01_upstream_pipeline/      # THE TOMBSTONE (Reference Only)    
-    │   └── Readme.md              # "Provenance Log: Data sourced from 10x Genomics v1.1.0..."
+    │   └── 01_forensic_knee_plot.py   
     │
     └── 02_analysis_scripts/           # THE PYTHON LOGIC CORE (Phases II-X)
         ├── __init__.py                # Makes this a package
         ├── utils.py                   # Shared physics (Plotting styles, Helper functions)
         │
-        ├── P02_matrix_construction.py # Phase II: Load 10x -> AnnData (N x p enforcement)
+        ├── P02_matrix_construction.py # Phase II: Load 10x h5 File -> .mtx, barcodes and genes tsv files (N x p enforcement)
         ├── P03_qc_filtering.py        # Phase III: MAD-based outlier detection
         ├── P04_normalization.py       # Phase IV: SCTransform vs LogNorm (Variance Decoupling)
         ├── P05_latent_geometry.py     # Phase V: PCA (Eigenstructure) & Neighbor Graph
