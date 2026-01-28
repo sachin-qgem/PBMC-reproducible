@@ -48,7 +48,7 @@ This is NOT a tutorial. This is a **Forensic Reconstruction**. We are auditing t
 │   │          └── genes.tsv
 │   │
 │   |── objects/                   # The State Vectors (H5AD Checkpoints)
-│   │   ├── pbmc3k_raw.h5ad        # Output of P02
+│   │   ├── pbmc3k_raw.h5ad        # Output of P02 , but as its not product of cell bender, would just use it as a display object, in P03 we use the filtered gene matrices downloaded from 10x
 │   │   ├── pbmc3k_qc.h5ad         # Output of P03
 │   │   ├── pbmc3k_norm.h5ad       # Output of P04
 │   │   └── pbmc3k_final.h5ad      # The Grand Unification Object (Phase IX)

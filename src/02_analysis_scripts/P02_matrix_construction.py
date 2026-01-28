@@ -6,7 +6,8 @@ import scipy.io as sio
 import os
 import gzip
 import shutil
-
+import anndata as ad
+ad.settings.allow_write_nullable_strings = True
 # ------------------------------------------------------------------
 # CONFIGURATION
 # ------------------------------------------------------------------
@@ -116,6 +117,27 @@ def reconstruct():
     write_10x(raw_matrix, decoded_barcodes, gene_ids, gene_names, raw_out)
 
     print(" RECONSTRUCTION COMPLETE.")
+
+    # Construct AnnData & Save H5AD but a Raw one so it wouldnt be of use as we can't
+    # use the CellBender on out computer due to computational limits.
+    print("   -> Assembling AnnData Object...")
+
+    # Create the DataFrames for Rows and Cols
+    # Rows = Cells (Barcodes)
+    obs_df = pd.DataFrame(index=decoded_barcodes)
+    
+    # Cols = Genes (Features)
+    # We use Gene ID as the unique index, and store the "Common Name" as a column
+    var_df = pd.DataFrame(index=gene_ids)
+    var_df['gene_symbols'] = gene_names 
+    
+    # Assemble the Object
+    adata = ad.AnnData(X=raw_matrix, obs=obs_df, var=var_df)
+    
+    # C. Save as H5AD
+    h5ad_path = "data/objects/pbmc3k_raw.h5ad"
+    print(f"   -> Saving Native H5AD Archive to {h5ad_path}...")
+    adata.write_h5ad(h5ad_path, compression='gzip') # 'gzip' saves space
 
 def write_10x(matrix, barcodes, g_ids, g_names, folder):
     os.makedirs(folder, exist_ok=True)
