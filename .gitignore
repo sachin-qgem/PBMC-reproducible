@@ -10,6 +10,7 @@ env/
 # --- Jupyter Notebooks ---
 .ipynb_checkpoints
 */.ipynb_checkpoints/*
+notebooks/*.ipynb
 
 # --- Data & Artifacts (CRITICAL) ---
 # We do not push heavy matter to the repository.
