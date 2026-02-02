@@ -117,6 +117,6 @@ if __name__ == "__main__":
 
     # Save the clean state for P04
     print(f"   -> Saving Golden Copy to {pbmc3k_qc_h5ad_path}...")
-    adata.write_h5ad(pbmc3k_qc_h5ad_path, compression='gzip')
+    adata_filtered.write_h5ad(pbmc3k_qc_h5ad_path, compression='gzip')
     
     print("::: P03 COMPLETE. READY FOR PHASE IV. :::")
