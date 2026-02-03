@@ -48,7 +48,7 @@ This is NOT a tutorial. This is a **Forensic Reconstruction**. We are auditing t
 │   │          └── genes.tsv
 │   │
 │   |── objects/                   # The State Vectors (H5AD Checkpoints)
-│   │   ├── pbmc3k_raw.h5ad        # Output of P02 , but as its not product of cell bender, would just use it as a display object, in P03 we use the filtered gene matrices downloaded from 10x
+│   │   ├── pbmc3k_raw.h5ad        # Output of P02 , but as its not product of cell bender, \would just use it as a display object, in P03 we use the filtered gene\ matrices downloaded from 10x
 │   │   ├── pbmc3k_qc.h5ad         # Output of P03
 │   │   ├── pbmc3k_norm.h5ad       # Output of P04
 │   │   ├── pbmc3k_pca.h5ad        # Output of P05
@@ -66,7 +66,7 @@ This is NOT a tutorial. This is a **Forensic Reconstruction**. We are auditing t
 │── results/
 │   │
 │   ├── figures/                        # The Visual Proofs
-│   │   ├── forensic_knee_plot.png      # A Kneeplot based on the reconstructed ~150,000  cell        barcodes (not cleaned using the cellbender, couldn't run cellbender on M2     chip),      So for downstream using the 2700 filtered genes matrix from the website
+│   │   ├── forensic_knee_plot.png      # A Kneeplot based on the reconstructed ~150,000\ cell barcodes (not cleaned using the cellbender, \couldn't run cellbender on M2 chip),\So for downstream using the 2700 \filtered genes matrix from the website
 │   │   │── phase3_qc/
 │   │   │   ├── scatter_pre_filter.png
 │   │   │   ├── violin_pre_filter.png
@@ -98,7 +98,7 @@ This is NOT a tutorial. This is a **Forensic Reconstruction**. We are auditing t
         ├── __init__.py                # Makes this a package
         ├── utils.py                   # Shared physics (Plotting styles, Helper functions)
         │
-        ├── P02_matrix_construction.py # Phase II: Load 10x h5 File -> .mtx, barcodes and genes tsv files (N x p enforcement)
+        ├── P02_matrix_construction.py # Phase II: Load 10x h5 File -> .mtx, barcodes\ and genes tsv files (N x p enforcement)
         ├── P03_qc_filtering.py        # Phase III: MAD-based outlier detection
         ├── P04_normalization.py       # Phase IV: SCTransform Lause 2021 (Variance Decoupling)
         ├── P05_latent_geometry.py     # Phase V: PCA (Eigenstructure)
