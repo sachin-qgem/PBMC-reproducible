@@ -51,6 +51,10 @@ This is NOT a tutorial. This is a **Forensic Reconstruction**. We are auditing t
 │   │   ├── pbmc3k_raw.h5ad        # Output of P02 , but as its not product of cell bender, would just use it as a display object, in P03 we use the filtered gene matrices downloaded from 10x
 │   │   ├── pbmc3k_qc.h5ad         # Output of P03
 │   │   ├── pbmc3k_norm.h5ad       # Output of P04
+│   │   ├── pbmc3k_pca.h5ad        # Output of P05
+│   │   ├── pbmc3k_clustered.h5ad  # Output of P06
+│   │   ├── pbmc3k_markers.h5ad    # Output of P07, annotated data
+│   │   ├── pbmc3k_gsea.h5ad       # Output of P08, diiferent than P07 output, using raw inputs
 │   │   └── pbmc3k_final.h5ad      # The Grand Unification Object (Phase IX)
 │   │
 │   └── reconstructed_matrices_final/
@@ -63,15 +67,19 @@ This is NOT a tutorial. This is a **Forensic Reconstruction**. We are auditing t
 │   │
 │   ├── figures/                   # The Visual Proofs
 │   │   │── phase3_qc/
-│   │   │   └── qc_violin_plots.png
+│   │   │   ├── scatter_pre_filter.png
+│   │   │   ├── violin_pre_filter.png
+│   │   │   ├── scatter_post_filter.png
+│   │   │   └── violin_post_filter.png
 │   │   │── phase4_variance/
 │   │   │   └── mean_variance_trend.png
-│   │   │── phase5_geometry/
+│   │   │── phase5_latent_geometry/
 │   │   │   └── pca_elbow_plot.png
+│   │   │── phase5_B_clustered_geometry/
 │   │   │   └── umap_leiden_clusters.png
 │   │   │── phase7_markers/
-│   │   │   └── dotplot_top_markers.png
-│   │   └── phase8_function/
+│   │   │   └── dotplot_top_markers.png     # P-values, DE, Marker Discovery & Annotation
+│   │   └── phase8_functional_gsea/
 │   │       └── gsea_bcell_pathway.png
 │   │
 │   ├── tables/                    # The Digital Proofs
@@ -91,10 +99,10 @@ This is NOT a tutorial. This is a **Forensic Reconstruction**. We are auditing t
         │
         ├── P02_matrix_construction.py # Phase II: Load 10x h5 File -> .mtx, barcodes and genes tsv files (N x p enforcement)
         ├── P03_qc_filtering.py        # Phase III: MAD-based outlier detection
-        ├── P04_normalization.py       # Phase IV: SCTransform vs LogNorm (Variance Decoupling)
-        ├── P05_latent_geometry.py     # Phase V: PCA (Eigenstructure) & Neighbor Graph
-        ├── P06_clustering.py          # Phase V(B): Leiden Community Detection
-        ├── P07_markers_identity.py    # Phase VI/VII: Marker Discovery & Annotation
+        ├── P04_normalization.py       # Phase IV: SCTransform Lause 2021 (Variance Decoupling)
+        ├── P05_latent_geometry.py     # Phase V: PCA (Eigenstructure)
+        ├── P06_clustering.py          # Phase V(B): KNN, UMAP, Leiden Community Detection
+        ├── P07_markers_identity.py    # Phase VI/VII: P-values, DE, Marker Discovery & Annotation
         ├── P08_functional_gsea.py     # Phase VIII: Pathway Enrichment (Random Walk)
         ├── P09_final_synthesis.py     # Phase IX: The Final Report Generation
         └── P10_causal_inference.py    # Phase X: The Causal DAG (Regulon Inference)

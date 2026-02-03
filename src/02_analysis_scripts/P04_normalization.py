@@ -1,16 +1,10 @@
 import scanpy as sc
-import pandas as pd
 import matplotlib.pyplot as plt
-import os
-from scipy import sparse, special, optimize
-import numpy as np
-from typing import Literal
 import anndata as ad
-import statsmodels.api as sm
-
+import os
 ad.settings.allow_write_nullable_strings = True
 sc.settings.figdir = "./results/figures"
-#sc.settings.verbosity = 3
+sc.settings.verbosity = 3
 
 
 '''
@@ -65,13 +59,62 @@ def data_layering(adata):
 def npr_and_hvg(adata):
     
     # we will tag the genes as HVG or not
-    # Taking theta Value to be 100.0 as from experiments in the 
-    sc.experimental.pp.highly_variable_genes(adata, theta= 100.0, flavor="pearson_residuals",
-                                              n_top_genes=3000,clip=True,subset=False)
+    # Taking theta Value to be 100.0 as from experiments in the (Lause et al., 2021)
+    print("tagging 2000 High Variable genes") #
+    sc.experimental.pp.highly_variable_genes(adata, theta= 100.0,flavor="pearson_residuals",
+                                              n_top_genes=2000,subset=False)
     # Pearson residuals calculation
-    sc.experimental.pp.normalize_pearson_residuals(adata, theta = 100.0,clip=True)
+    print(f"Calculating Pearson Residuals on raw values for {adata.n_obs} cells x {adata.n_vars} genes")
+    sc.experimental.pp.normalize_pearson_residuals(adata, theta = 100.0,inplace=True)
     return adata
 
+def plot_mean_vs_variance(adata, stagename:str):
+    print(f"   -> Generating Dispersion Audit Plot ({stagename})...")
+    
+    # Check if the keys exist (Safety)
+    if 'residual_variances' not in adata.var.keys():
+        print("Error: 'residual_variances' not found. skipping plot.")
+        return
+
+    # CREATE PLOT
+    plt.figure(figsize=(8, 6))
+    
+    # Plot all genes (grey)
+    plt.scatter(
+        adata.var['means'], 
+        adata.var['residual_variances'], 
+        s=3, 
+        c='grey', 
+        alpha=0.5, 
+        label='Gene'
+    )
+    
+    # Overlay HVGs (red)
+    hvg_mask = adata.var['highly_variable']
+    plt.scatter(
+        adata.var.loc[hvg_mask, 'means'], 
+        adata.var.loc[hvg_mask, 'residual_variances'], 
+        s=5, 
+        c='red', 
+        label='HVG'
+    )
+    
+    # PHYSICS LABELS
+    plt.xscale('log') # Log scale is mandatory for expression data
+    plt.yscale('log') # Log scale helps see the spread
+    plt.xlabel('Mean Expression (log)')
+    plt.ylabel('Residual Variance (Pearson)')
+    plt.title(f'Mean-Variance Trend (Theta=100)')
+    plt.legend()
+    
+    # 4. SAVE
+    save_path = os.path.join(sc.settings.figdir, f"_{stagename}.png")
+    # Ensure directory exists
+    os.makedirs(sc.settings.figdir, exist_ok=True)
+    
+    plt.savefig(save_path)
+    plt.close() 
+    print(f"      -> Plot saved to {save_path}")
 
 if __name__ == "__main__":
     h5ad_path = "data/objects/pbmc3k_qc.h5ad"
@@ -79,5 +122,6 @@ if __name__ == "__main__":
     adata = load_evidence(h5ad_path)
     adata = data_layering(adata)
     adata = npr_and_hvg(adata)
+    plot_mean_vs_variance(adata, 'mean_variance_trend')
     adata.write_h5ad(output_path,compression='gzip')
     print (f"::: P04 Output {output_path}  with pearson residuals and HVG saved")
