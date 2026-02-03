@@ -22,7 +22,7 @@ This is NOT a tutorial. This is a **Forensic Reconstruction**. We are auditing t
 
 -------
 ### The Repo Structure:
-
+```
 /PBMC3k-reproducible
 │
 ├── README.md                      # The Forensic Log: Project Mission, Assumptions, and 5-Sigma Status.
@@ -65,7 +65,8 @@ This is NOT a tutorial. This is a **Forensic Reconstruction**. We are auditing t
 │
 │── results/
 │   │
-│   ├── figures/                   # The Visual Proofs
+│   ├── figures/                        # The Visual Proofs
+│   │   ├── forensic_knee_plot.png      # A Kneeplot based on the reconstructed ~150,000  cell        barcodes (not cleaned using the cellbender, couldn't run cellbender on M2     chip),      So for downstream using the 2700 filtered genes matrix from the website
 │   │   │── phase3_qc/
 │   │   │   ├── scatter_pre_filter.png
 │   │   │   ├── violin_pre_filter.png
@@ -106,3 +107,4 @@ This is NOT a tutorial. This is a **Forensic Reconstruction**. We are auditing t
         ├── P08_functional_gsea.py     # Phase VIII: Pathway Enrichment (Random Walk)
         ├── P09_final_synthesis.py     # Phase IX: The Final Report Generation
         └── P10_causal_inference.py    # Phase X: The Causal DAG (Regulon Inference)
+```
