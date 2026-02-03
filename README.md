@@ -16,7 +16,7 @@ This is NOT a tutorial. This is a **Forensic Reconstruction**. We are auditing t
 - **src/**: Modular logic corresponding to the 9 Phases.
 - **data/**:
     - \raw: Immutable inputs (BAM/FASTQ or Matrices).
-    - \processed: Canonical AnnData objects.
+    - \objects: Canonical AnnData objects.
 - **notebooks/**: Audits and derivations.
 
 
