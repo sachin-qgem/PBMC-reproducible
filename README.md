@@ -25,16 +25,16 @@ This is NOT a tutorial. This is a **Forensic Reconstruction**. We are auditing t
 ```
 /PBMC3k-reproducible
 │
-├── README.md                      # The Forensic Log: Project Mission, Assumptions, and 5-Sigma Status.
-├── environment.yml                # The "Laws of Physics": Conda environment (Scanpy, PyTorch, scvi-tools).
-├── .gitignore                     # Exclusion rules (e.g., ignore large *.h5ad files, keep code).
-├── License                        # MIT License
+├── README.md                           # The Forensic Log: Project Mission, Assumptions, and 5-Sigma Status.
+├── environment.yml                     # The "Laws of Physics": Conda environment (Scanpy, PyTorch, scvi-tools).
+├── .gitignore                          # Exclusion rules (e.g., ignore large *.h5ad files, keep code).
+├── License                             # MIT License
 │
 │── docs/
-│   └── roadmap.md                 # How the phases 1 to 9 are covered
+│   └── roadmap.md                      # How the phases 1 to 9 are covered
 │       
 │── data/
-│   |── raw/                       # IMMUTABLE INPUTS (Read-Only)
+│   |── raw/                             # IMMUTABLE INPUTS (Read-Only)
 │   │   │── pbmc3k_raw_gene_bc_matrices/ # Starting Point (if skipping Phase I)
 │   │   │   └── hg19/
 │   │   │      ├── matrix.mtx
@@ -47,17 +47,17 @@ This is NOT a tutorial. This is a **Forensic Reconstruction**. We are auditing t
 │   │          ├── barcodes.tsv
 │   │          └── genes.tsv
 │   │
-│   |── objects/                   # The State Vectors (H5AD Checkpoints)
-│   │   ├── pbmc3k_raw.h5ad        # Output of P02 , but as its not product of cell. 
+│   |── objects/                        # The State Vectors (H5AD Checkpoints)
+│   │   ├── pbmc3k_raw.h5ad             # Output of P02 , but as its not product of cell. 
 bender, would just use it as a display object, in P03 we use the filtered gene 
 matrices downloaded from 10x
-│   │   ├── pbmc3k_qc.h5ad         # Output of P03
-│   │   ├── pbmc3k_norm.h5ad       # Output of P04
-│   │   ├── pbmc3k_pca.h5ad        # Output of P05
-│   │   ├── pbmc3k_clustered.h5ad  # Output of P06
-│   │   ├── pbmc3k_markers.h5ad    # Output of P07, annotated data
-│   │   ├── pbmc3k_gsea.h5ad       # Output of P08, diiferent than P07 output, using raw inputs
-│   │   └── pbmc3k_final.h5ad      # The Grand Unification Object (Phase IX)
+│   │   ├── pbmc3k_qc.h5ad              # Output of P03
+│   │   ├── pbmc3k_norm.h5ad            # Output of P04
+│   │   ├── pbmc3k_pca.h5ad             # Output of P05
+│   │   ├── pbmc3k_clustered_B.h5ad     # Output of P06
+│   │   ├── pbmc3k_markers.h5ad         # Output of P07, annotated data
+│   │   ├── pbmc3k_gsea.h5ad            # Output of P08, diiferent than P07 output, using raw inputs
+│   │   └── pbmc3k_final.h5ad           # The Grand Unification Object (Phase IX)
 │   │
 │   └── reconstructed_matrices_final/
 │       └── raw_gene_bc_matrices/
@@ -79,23 +79,25 @@ So for downstream using the 2700 filtered genes matrix from the website
 │   │   │── phase4_variance/
 │   │   │   └── mean_variance_trend.png
 │   │   │── phase5_latent_geometry/
-│   │   │   └── pca_elbow_plot.png
+│   │   │   ├── pca_components.png
+│   │   │   └── pca_variance_ratio_P05_pca_elbow_plot.png
 │   │   │── phase5_B_clustered_geometry/
-│   │   │   └── umap_leiden_clusters.png
+│   │   │   ├── umap_Projected Validation.png
+│   │   │   └── umap_Training Manifold.png
 │   │   │── phase7_markers/
 │   │   │   └── dotplot_top_markers.png     # P-values, DE, Marker Discovery & Annotation
 │   │   └── phase8_functional_gsea/
 │   │       └── gsea_bcell_pathway.png
 │   │
-│   ├── tables/                    # The Digital Proofs
-│   │   ├── markers_wilcoxon.csv   # Differential Expression Stats
-│   │   ├── cell_type_mapping.csv  # Cluster ID -> Biological Name
-│   │   └── gsea_results.csv       # Functional Enrichment Scores
-│   └── report/                    # Final Certificate
+│   ├── tables/                             # The Digital Proofs
+│   │   ├── markers_wilcoxon.csv            # Differential Expression Stats
+│   │   ├── cell_type_mapping.csv           # Cluster ID -> Biological Name
+│   │   └── gsea_results.csv                # Functional Enrichment Scores
+│   └── report/                             # Final Certificate
 │       └── forensic_audit_pbmc3k.pdf
 │
 └── src/
-    ├── 01_upstream_pipeline/      # THE TOMBSTONE (Reference Only)    
+    ├── 01_upstream_pipeline/          # THE TOMBSTONE (Reference Only)    
     │   └── 01_forensic_knee_plot.py   
     │
     └── 02_analysis_scripts/           # THE PYTHON LOGIC CORE (Phases II-X)

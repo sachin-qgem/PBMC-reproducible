@@ -22,15 +22,18 @@ def pca(adata):
     return adata
 
 #screeplot and save in figures folder
-def screeplot(adata,stagename:str):
+def screeplot_and_pca(adata,stagename:str):
+    
     sc.pl.pca_variance_ratio(adata,n_pcs=50,show=True,save=f"_{stagename}.png")
+    sc.pl.pca(adata,color_map = 'Blues',save=f"_components.png"
+              ,projection = '3d',annotate_var_explained=True)
 
 if __name__ == '__main__':
     h5ad_path = "data/objects/pbmc3k_norm.h5ad"
     output_path = "data/objects/pbmc3k_pca.h5ad"
     adata = load_evidence(h5ad_path)
     adata = pca(adata)
-    screeplot(adata,'P05_pca_elbow_plot')
+    screeplot_and_pca(adata,'P05_pca_elbow_plot')
     adata.write_h5ad(output_path)
     
 
