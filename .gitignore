@@ -25,3 +25,4 @@ logs/
 *.log
 openh5file.py
 P03a_forensic_knee_plot.py
+*.ipynb
