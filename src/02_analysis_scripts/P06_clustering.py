@@ -116,6 +116,47 @@ def stability_audit(adata_A,figure_path):
         print("      WARNING: Clusters are unstable! They collapsed under subsampling.")
     else:
         print("      PASSED: Clusters are physically robust.")
+    # ---------------------------------------------------------
+    # TEST 3: BIOLOGICAL SANITY CHECK (The Identity Verification)
+    # ---------------------------------------------------------
+    ref_res = 0.6
+    print(f"   -> [TEST 3] Biological Sanity Check (at Res {ref_res})...")
+    # Ensure reference exists
+    if f'leiden_res_{ref_res}' not in adata_A_test_1.obs:
+        sc.tl.leiden(adata_A_test_1, resolution=ref_res,
+                      key_added=f'leiden_res_{ref_res}', flavor='leidenalg')
+    
+    # A. Quick Rank Genes (Wilcoxon is standard, t-test is faster for audit)
+    # Physics: We ask "What makes Cluster X different from the rest?"
+    sc.tl.rank_genes_groups(adata_A_test_1, groupby=f'leiden_res_{ref_res}', method='wilcoxon')
+    
+    # B. Print Top 3 Markers per Cluster
+    print("      -> Top 3 Marker Genes per Cluster:")
+    pd.set_option('display.max_columns', None)
+    pd.set_option('display.width', 1000)
+    
+    # Extract results structure
+    result_df = pd.DataFrame(adata_A_test_1.uns['rank_genes_groups']['names']).head(3)
+    print(result_df)
+    
+    # C. VISUAL SANITY: The Canonical Marker DotPlot
+    # These are the "Known Truths" for PBMC. If clusters don't light up correctly, the resolution is wrong.
+    marker_genes_dict = {
+        'B-cell': ['MS4A1', 'CD79A'],
+        'T-cell': ['CD3D', 'IL7R', 'CD8A'],
+        'NK': ['GNLY', 'NKG7'],
+        'Mono': ['CD14', 'FCGR3A'],
+        'Dendritic': ['FCER1A', 'CST3'],
+        'Platelet': ['PPBP']
+    }
+    
+    # Filter markers to ensure they exist in the dataset (prevent errors)
+    valid_markers = {k: [g for g in v if g in adata_A_test_1.var_names] for k, v in marker_genes_dict.items()}
+    
+    print("      -> Generating Sanity DotPlot...")
+    dp = sc.pl.dotplot(adata_A_test_1, valid_markers, groupby=f'leiden_res_{ref_res}', standard_scale='var', show=False)
+    plt.savefig("results/figures/phase5_B_clustered_geometry/stability_biological_sanity.png")
+    plt.close()
 
     a = adata_A_test_1.obs
     del adata_A_test_1,adata_A_test_sub,adata_A_test_2
