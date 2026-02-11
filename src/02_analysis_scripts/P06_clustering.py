@@ -157,10 +157,7 @@ def stability_audit(adata_A,figure_path):
     dp = sc.pl.dotplot(adata_A_test_1, valid_markers, groupby=f'leiden_res_{ref_res}', standard_scale='var', show=False)
     plt.savefig("results/figures/phase5_B_clustered_geometry/stability_biological_sanity.png")
     plt.close()
-
-    a = adata_A_test_1.obs
     del adata_A_test_1,adata_A_test_sub,adata_A_test_2
-    return df_res,a
 
   
 # Run clustering and KNN , Umap on A_Data
