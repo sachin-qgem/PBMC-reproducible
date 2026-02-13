@@ -23,8 +23,8 @@ def load_evidence(h5ad_path):
 We will be splitting the dataset into two(A, B), to sove the Double Dipping problem
 Then perform KNN, leiden, and Umap, on A, train a classifier on it and project
 a untouched B on A, with obs columns 'leiden'. So, that B only has labelled leiden
-based on pattern learned from A and not actual clusters. And then Visualizing and comparing
-the splits UMAPs to check if it got projected correctly
+based on pattern learned from A and not actual clusters. And then Visualizing
+and comparing the splits UMAPs to check if it got projected correctly
 '''
 # Split Dataset
 def split_data(adata):
@@ -51,7 +51,8 @@ def stability_audit(adata_A,figure_path):
     # Run Clustering at all resolutions
     for res in resolutions:
         key = f"leiden_res_{res}"
-        sc.tl.leiden(adata_A_test_1, resolution=res, key_added=key, flavor='leidenalg')
+        sc.tl.leiden(adata_A_test_1, resolution=res, key_added=key, 
+                     flavor='leidenalg')
         # Store count
         n_clusters = len(adata_A_test_1.obs[key].unique())
         results.append({'res': res, 'n_clusters': n_clusters, 'key': key})
@@ -71,7 +72,8 @@ def stability_audit(adata_A,figure_path):
     
     # VISUALIZE THE PLATEAU
     plt.figure(figsize=(25, 13))
-    sns.lineplot(data=df_res, x='res', y='n_clusters', marker='o', label='Cluster Count')
+    sns.lineplot(data=df_res, x='res', y='n_clusters', marker='o',
+                  label='Cluster Count')
     ax2 = plt.twinx()
     sns.lineplot(data=df_res, x='res', y='neighbor_ari',
                   color='red', marker='x', ax=ax2, label='Stability (ARI)')
@@ -113,9 +115,9 @@ def stability_audit(adata_A,figure_path):
     print(f"   -> Structural Robustness Score (ARI): {robustness_score:.3f}")
     
     if robustness_score < 0.7:
-        print("      WARNING: Clusters are unstable! They collapsed under subsampling.")
+        print("   WARNING: Clusters are unstable! They collapsed under subsampling.")
     else:
-        print("      PASSED: Clusters are physically robust.")
+        print("   PASSED: Clusters are physically robust.")
     # ---------------------------------------------------------
     # TEST 3: BIOLOGICAL SANITY CHECK (The Identity Verification)
     # ---------------------------------------------------------
@@ -128,7 +130,8 @@ def stability_audit(adata_A,figure_path):
     
     # A. Quick Rank Genes (Wilcoxon is standard, t-test is faster for audit)
     # Physics: We ask "What makes Cluster X different from the rest?"
-    sc.tl.rank_genes_groups(adata_A_test_1, groupby=f'leiden_res_{ref_res}', method='wilcoxon')
+    sc.tl.rank_genes_groups(adata_A_test_1, groupby=f'leiden_res_{ref_res}',
+                             method='wilcoxon')
     
     # B. Print Top 3 Markers per Cluster
     print("      -> Top 3 Marker Genes per Cluster:")
@@ -136,11 +139,13 @@ def stability_audit(adata_A,figure_path):
     pd.set_option('display.width', 1000)
     
     # Extract results structure
-    result_df = pd.DataFrame(adata_A_test_1.uns['rank_genes_groups']['names']).head(3)
+    result_df = pd.DataFrame(adata_A_test_1.uns['rank_genes_groups']
+                             ['names']).head(3)
     print(result_df)
     
     # C. VISUAL SANITY: The Canonical Marker DotPlot
-    # These are the "Known Truths" for PBMC. If clusters don't light up correctly, the resolution is wrong.
+    # These are the "Known Truths" for PBMC. If clusters don't 
+    # light up correctly, the resolution is wrong.
     marker_genes_dict = {
         'B-cell': ['MS4A1', 'CD79A'],
         'T-cell': ['CD3D', 'IL7R', 'CD8A'],
@@ -151,11 +156,15 @@ def stability_audit(adata_A,figure_path):
     }
     
     # Filter markers to ensure they exist in the dataset (prevent errors)
-    valid_markers = {k: [g for g in v if g in adata_A_test_1.var_names] for k, v in marker_genes_dict.items()}
+    valid_markers = {k: [g for g in v if g in adata_A_test_1.var_names]
+                      for k, v in marker_genes_dict.items()}
     
     print("      -> Generating Sanity DotPlot...")
-    dp = sc.pl.dotplot(adata_A_test_1, valid_markers, groupby=f'leiden_res_{ref_res}', standard_scale='var', show=False)
-    plt.savefig("results/figures/phase5_B_clustered_geometry/stability_biological_sanity.png")
+    dp = sc.pl.dotplot(adata_A_test_1, valid_markers, 
+                       groupby=f'leiden_res_{ref_res}', standard_scale='var',
+                         show=False)
+    plt.savefig("results/figures/phase5_B_clustered_geometry/" \
+    "stability_biological_sanity.png")
     plt.close()
     del adata_A_test_1,adata_A_test_sub,adata_A_test_2
 

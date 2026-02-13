@@ -82,9 +82,15 @@ So for downstream using the 2700 filtered genes matrix from the website
 │   │   │   ├── pca_components.png
 │   │   │   └── pca_variance_ratio_P05_pca_elbow_plot.png
 │   │   │── phase5_B_clustered_geometry/
+│   │   │   ├── stability_biological_sanity.png
+│   │   │   ├── stability_sweep.png
 │   │   │   ├── umap_Projected Validation.png
 │   │   │   └── umap_Training Manifold.png
 │   │   │── phase7_markers/
+│   │   │   ├──
+│   │   │   ├──
+│   │   │   ├──
+│   │   │   ├──
 │   │   │   └── dotplot_top_markers.png     # P-values, DE, Marker Discovery & Annotation
 │   │   └── phase8_functional_gsea/
 │   │       └── gsea_bcell_pathway.png
