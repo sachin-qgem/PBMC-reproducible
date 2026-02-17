@@ -202,7 +202,8 @@ def visualize_split(adata_A,adata_B):
 
 if __name__ == '__main__':
     h5ad_path = "data/objects/pbmc3k_pca.h5ad"
-    output_path = "data/objects/pbmc3k_clustered_B.h5ad"
+    A_output_path = "data/objects/pbmc3k_clustered_A.h5ad"
+    B_output_path = "data/objects/pbmc3k_clustered_B.h5ad"
     figure_path = "results/figures/phase5_B_clustered_geometry/stability_sweep.png"
     adata = load_evidence(h5ad_path)
     adata_A, adata_B = split_data(adata)
@@ -211,7 +212,8 @@ if __name__ == '__main__':
     adata_B = project_B_on_A(adata_B,adata_A)
     print(f"Saving and Visualizing Both UMAPs from A and B")
     visualize_split(adata_A,adata_B)
-    print(f"Saving the adata_B to {output_path} for Downstream analaysis")
-    adata_B.write_h5ad(output_path)
+    print(f"Saving the adata_B to {B_output_path} for Downstream analaysis")
+    adata_A.write_h5ad(A_output_path)
+    adata_B.write_h5ad(B_output_path)
 
     
