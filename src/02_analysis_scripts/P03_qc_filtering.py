@@ -111,6 +111,10 @@ if __name__ == "__main__":
                     "pct_counts_mt", "pre_filter")
     
     adata_filtered = apply_filter(adata)
+    adata_filtered.layers['counts'] = adata_filtered.X.copy()
+    adata_temp = adata_filtered.copy()
+    adata_filtered.layers['log1p_norm'] = adata_temp.X.copy()
+    del adata_temp
     print("   -> Running Post-Filter Audit...")
     audit_distribution(adata_filtered, v_keys, "total_counts", "n_genes_by_counts",
                         "pct_counts_mt", "post_filter")

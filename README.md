@@ -53,6 +53,7 @@ bender, would just use it as a display object, in P03 we use the filtered gene
 matrices downloaded from 10x
 │   │   ├── pbmc3k_qc.h5ad              # Output of P03
 │   │   ├── pbmc3k_norm.h5ad            # Output of P04
+│   │   ├── pbmc3k_bio_covariates.h5ad  # Output of P04_B removed the bio confounders
 │   │   ├── pbmc3k_pca.h5ad             # Output of P05
 │   │   ├── pbmc3k_clustered_B.h5ad     # Output of P06
 │   │   ├── pbmc3k_markers.h5ad         # Output of P07, annotated data
@@ -78,10 +79,12 @@ So for downstream using the 2700 filtered genes matrix from the website
 │   │   │   └── violin_post_filter.png
 │   │   │── phase4_variance/
 │   │   │   └── mean_variance_trend.png
+│   │   │── phase4_B_variance/
+│   │   │   └── mean_variance_trend.png
 │   │   │── phase5_latent_geometry/
 │   │   │   ├── pca_components.png
 │   │   │   └── pca_variance_ratio_P05_pca_elbow_plot.png
-│   │   │── phase5_B_clustered_geometry/
+│   │   │── phase6_clustered_geometry/
 │   │   │   ├── stability_biological_sanity.png
 │   │   │   ├── stability_sweep.png
 │   │   │   ├── umap_Projected Validation.png
@@ -114,9 +117,10 @@ So for downstream using the 2700 filtered genes matrix from the website
          and genes tsv files (N x p enforcement)
         ├── P03_qc_filtering.py        # Phase III: MAD-based outlier detection
         ├── P04_normalization.py       # Phase IV: SCTransform Lause 2021 (Variance Decoupling)
+        ├── P04B_rmv_bio_cvrts.py   # Phase IV_B: Remove any bio covariates (bio confounder we dont need for this particular project such as cell cycle effects)
         ├── P05_latent_geometry.py     # Phase V: PCA (Eigenstructure)
-        ├── P06_clustering.py          # Phase V(B): KNN, UMAP, Leiden Community Detection
-        ├── P07_markers_identity.py    # Phase VI/VII: P-values, DE, Marker Discovery & Annotation
+        ├── P06_clustering.py          # Phase VI: KNN, UMAP, Leiden Community Detection
+        ├── P07_markers_identity.py    # Phase VII: P-values, DE, Marker Discovery & Annotation
         ├── P08_functional_gsea.py     # Phase VIII: Pathway Enrichment (Random Walk)
         ├── P09_final_synthesis.py     # Phase IX: The Final Report Generation
         └── P10_causal_inference.py    # Phase X: The Causal DAG (Regulon Inference)
