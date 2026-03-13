@@ -113,6 +113,8 @@ if __name__ == "__main__":
     adata_filtered = apply_filter(adata)
     adata_filtered.layers['counts'] = adata_filtered.X.copy()
     adata_temp = adata_filtered.copy()
+    sc.pp.normalize_total(adata_temp, target_sum = 1e4)
+    sc.pp.log1p(adata_temp)
     adata_filtered.layers['log1p_norm'] = adata_temp.X.copy()
     del adata_temp
     print("   -> Running Post-Filter Audit...")
