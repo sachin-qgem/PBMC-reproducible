@@ -1,4 +1,3 @@
-```markdown
 # PBMC3k-reproducible
 
 **Status:** EXECUTION MODE  
@@ -116,5 +115,4 @@ make pipeline
 ├── practice.ipynb                      # Scratchpad for functional testing
 ├── Makefile                            # Master Execution Console
 └── README.md                           # The Forensic Log: Project Mission and Constraints
-```
 ```
