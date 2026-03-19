@@ -64,7 +64,7 @@ We are auditing the pipeline to validate our Theory of Variance. We assume the s
 ├── src/                                # The Python Logic Core
 │   ├── 01_upstream_pipeline/           # The Tombstone (Reference for FASTQ/BAM -> Matrix)
 │   └── 02_analysis_scripts/            # The 5-Sigma Pipeline Engines
-│       ├── P02_matrix_construction.py  # Data ingestion and tensor formatting
+│       ├── P02_matrix_construction.py  # Data ingestion and tensor formatting(!you can run cellbender on linux if you want. I have used filtered gene matrices in P03 as I only have macos)
 │       ├── P03_qc_filtering.py         # Phase I: 5-MAD outlier detection and matrix purge
 │       ├── P04_clustering.py           # Phase II: Latent geometry, KNN, and Leiden resolution arrays
 │       ├── P05_top_markers.py          # Phase III: Wilcoxon rank-sum extraction and lineage validation
