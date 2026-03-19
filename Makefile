@@ -32,7 +32,7 @@ setup:
 	@echo "\n[SUCCESS] Environment forged. Run 'conda activate ./.conda' before executing the pipeline."
 
 # --- Pipeline Sequence ---
-pipeline: matrix qc cluster markers annotate
+pipeline: clean matrix qc cluster markers annotate
 	@echo "\n[TERMINAL] Full Pipeline Execution Complete. ML Tensor ready."
 
 # --- Individual Engines ---
