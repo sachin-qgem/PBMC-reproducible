@@ -1,127 +1,77 @@
-# PBMC3k-reproducible : 
+# PBMC3k-reproducible
 
-**Status:** EXECUTION MODE.
-**Objective:** Reproduce the PBMC3k dataset analysis from First Principles.
+**Status:** EXECUTION MODE  
+**Objective:** Reproduce the PBMC3k dataset analysis from First Principles.  
 
-This is NOT a tutorial. This is a **Forensic Reconstruction**. We are auditing the pipeline to validate our **Theory of Variance**. We assume the standard pipeline might be flawed and requires rigorous proof at every step.
+This is NOT a tutorial. This is a **Forensic Reconstruction**.  
+We are auditing the pipeline to validate our Theory of Variance. We assume the standard pipeline might be flawed and requires rigorous computational proof at every structural node.
 
-## Execution Constraints
-1. **The Physical Object:** Explicitly tracking the transformation (e.g., Light Signal → Probability → Count).
-2. **The Assumptions:** Stating mathematical simplifications.
+---
+
+### Execution Constraints
+
+1. **The Physical Object:** Explicitly tracking the transformation (e.g., Light Signal Probability → Count). Matrix orientation is strictly maintained as `Cells x Genes`.
+2. **The Assumptions:** Stating mathematical simplifications and thermodynamic floors explicitly.
 3. **The Bridge Axiom:** Justifying steps with derived truth (e.g., Axiom A1: Poisson Limit).
-4. **The Failure Mode:** Analyzing what breaks if a step is skipped.
-5. **The Modernity Audit:** Comparing 2018 methods against 2024/2025 standards.
+4. **The Failure Mode:** Analyzing exactly what breaks if a step is bypassed or abstracted.
+5. **The Modernity Audit:** Comparing foundational 2018 methods against stringent 2024/2025 industrial standards.
 
-## Architecture
-- **src/**: Modular logic corresponding to the 9 Phases.
-- **data/**:
-    - \raw: Immutable inputs (BAM/FASTQ or Matrices).
-    - \objects: Canonical AnnData objects.
-- **notebooks/**: Audits and derivations.
+---
 
+### Global Architecture
 
--------
-### The Repo Structure:
+* **`src/`**: The immutable Python logic core. Divided into upstream processing and downstream analysis scripts.
+* **`data/`**: The physical data lake containing unadulterated raw inputs, checkpointed `.h5ad` state vectors, and absolute biological reference dictionaries.
+* **`results/`**: The output staging ground. Houses the generated JSON ledgers, CSV topologies, and all cross-validation visual evidence.
+* **`notebooks/`**: The computational workshop for initial audits, visual derivations, and parameter testing.
+
+---
+
+### Repository Structure
+
 ```
 /PBMC3k-reproducible
 │
-├── README.md                           # The Forensic Log: Project Mission, Assumptions, and 5-Sigma Status.
-├── environment.yml                     # The "Laws of Physics": Conda environment (Scanpy, PyTorch, scvi-tools).
-├── .gitignore                          # Exclusion rules (e.g., ignore large *.h5ad files, keep code).
-├── License                             # MIT License
+├── .conda/                             # Isolated thermodynamic environment (Python runtime)(Hidden Not uploaded)
+├── cache/                              # Temporary execution buffers (Hidden Not uploaded)
 │
-│── docs/
-│   └── roadmap.md                      # How the phases 1 to 9 are covered
-│       
-│── data/
-│   |── raw/                             # IMMUTABLE INPUTS (Read-Only)
-│   │   │── pbmc3k_raw_gene_bc_matrices/ # Starting Point (if skipping Phase I)
-│   │   │   └── hg19/
-│   │   │      ├── matrix.mtx
-│   │   │      ├── barcodes.tsv
-│   │   │      └── genes.tsv
-│   │   │
-│   │   └── pbmc3k_filtered_gene_bc_matrices/  # SP (if skipping raw matrices)   
-│   │       └── hg19/
-│   │          ├── matrix.mtx
-│   │          ├── barcodes.tsv
-│   │          └── genes.tsv
-│   │
-│   |── objects/                        # The State Vectors (H5AD Checkpoints)
-│   │   ├── pbmc3k_raw.h5ad             # Output of P02 , but as its not product of cell. 
-bender, would just use it as a display object, in P03 we use the filtered gene 
-matrices downloaded from 10x
-│   │   ├── pbmc3k_qc.h5ad              # Output of P03
-│   │   ├── pbmc3k_norm.h5ad            # Output of P04
-│   │   ├── pbmc3k_bio_covariates.h5ad  # Output of P04_B removed the bio confounders
-│   │   ├── pbmc3k_pca.h5ad             # Output of P05
-│   │   ├── pbmc3k_clustered_B.h5ad     # Output of P06
-│   │   ├── pbmc3k_markers.h5ad         # Output of P07, annotated data
-│   │   ├── pbmc3k_gsea.h5ad            # Output of P08, diiferent than P07 output, using raw inputs
-│   │   └── pbmc3k_final.h5ad           # The Grand Unification Object (Phase IX)
-│   │
-│   └── reconstructed_matrices_final/
-│       └── raw_gene_bc_matrices/
-│           ├── matrix.mtx
-│           ├── barcodes.tsv
-│           └── genes.tsv
+├── data/                               # The Data Lake (Hidden Not uploaded)
+│   ├── celltypist_models/              # Automated reference-based annotation models
+│   ├── objects/                        # Checkpointed AnnData (.h5ad) state vectors
+│   ├── raw/                            # Immutable 10x Genomics inputs
+│   │   ├── pbmc3k_filtered_gene_bc_matrices/
+│   │   ├── pbmc3k_raw_gene_bc_matrices/
+│   │   └── pbmc3k_molecule_info.h5
+│   ├── reconstructed_matrices_final/   # Post-CellBender/Upstream corrected matrices
+│   │   └── raw_gene_bc_matrices/
+│   │       ├── barcodes.tsv
+│   │       ├── genes.tsv
+│   │       ├── matrix.mtx
+│   │       └── matrix.mtx.gz
+│   ├── regev_lab_cell_cycle_genes.txt  # Biological reference for cell cycle scoring
+│   ├── Teichlab_curated_markers.json   # Canonical marker validation dictionary
+│   └── universal_ontology_id_dict.json # Standardized Cell Ontology (CL) mapping
 │
-│── results/
-│   │
-│   ├── figures/                        # The Visual Proofs
-│   │   ├── forensic_knee_plot.png      # A Kneeplot based on the reconstructed ~150,000 
-cell barcodes (not cleaned using the cellbender, couldn't run cellbender on M2 chip),  
-So for downstream using the 2700 filtered genes matrix from the website
-│   │   │── phase3_qc/
-│   │   │   ├── scatter_pre_filter.png
-│   │   │   ├── violin_pre_filter.png
-│   │   │   ├── scatter_post_filter.png
-│   │   │   └── violin_post_filter.png
-│   │   │── phase4_variance/
-│   │   │   └── mean_variance_trend.png
-│   │   │── phase4_B_variance/
-│   │   │   └── mean_variance_trend.png
-│   │   │── phase5_latent_geometry/
-│   │   │   ├── pca_components.png
-│   │   │   └── pca_variance_ratio_P05_pca_elbow_plot.png
-│   │   │── phase6_clustered_geometry/
-│   │   │   ├── stability_biological_sanity.png
-│   │   │   ├── stability_sweep.png
-│   │   │   ├── umap_Projected Validation.png
-│   │   │   └── umap_Training Manifold.png
-│   │   │── phase7_markers/
-│   │   │   ├──
-│   │   │   ├──
-│   │   │   ├──
-│   │   │   ├──
-│   │   │   └── dotplot_top_markers.png     # P-values, DE, Marker Discovery & Annotation
-│   │   └── phase8_functional_gsea/
-│   │       └── gsea_bcell_pathway.png
-│   │
-│   ├── tables/                             # The Digital Proofs
-│   │   ├── markers_wilcoxon.csv            # Differential Expression Stats
-│   │   ├── cell_type_mapping.csv           # Cluster ID -> Biological Name
-│   │   └── gsea_results.csv                # Functional Enrichment Scores
-│   └── report/                             # Final Certificate
-│       └── forensic_audit_pbmc3k.pdf
+├── docs/                               # Project documentation and phase roadmaps
 │
-└── src/
-    ├── 01_upstream_pipeline/          # THE TOMBSTONE (Reference Only)    
-    │   └── 01_forensic_knee_plot.py   
-    │
-    └── 02_analysis_scripts/           # THE PYTHON LOGIC CORE (Phases II-X)
-        ├── __init__.py                # Makes this a package
-        ├── utils.py                   # Shared physics (Plotting styles, Helper functions)
-        │
-        ├── P02_matrix_construction.py # Phase II: Load 10x h5 File -> .mtx, barcodes  
-         and genes tsv files (N x p enforcement)
-        ├── P03_qc_filtering.py        # Phase III: MAD-based outlier detection
-        ├── P04_normalization.py       # Phase IV: SCTransform Lause 2021 (Variance Decoupling)
-        ├── P04B_rmv_bio_cvrts.py   # Phase IV_B: Remove any bio covariates (bio confounder we dont need for this particular project such as cell cycle effects)
-        ├── P05_latent_geometry.py     # Phase V: PCA (Eigenstructure)
-        ├── P06_clustering.py          # Phase VI: KNN, UMAP, Leiden Community Detection
-        ├── P07_markers_identity.py    # Phase VII: P-values, DE, Marker Discovery & Annotation
-        ├── P08_functional_gsea.py     # Phase VIII: Pathway Enrichment (Random Walk)
-        ├── P09_final_synthesis.py     # Phase IX: The Final Report Generation
-        └── P10_causal_inference.py    # Phase X: The Causal DAG (Regulon Inference)
-```
+├── results/                            # Output staging and visual telemetry
+│   └── figures/                        # The Visual Proofs
+│       ├── p03_qc_filtering/           # MAD boundaries, cell cycle scoring, and dropout audits
+│       ├── p04_clustering/             # Subsampling stability sweeps and thermodynamic overlap 
+│       ├── p05_top_markers/            # Canonical dotplots and absence-audit cross-validation
+│       └── p06_annotation/             # Reference mapping and final topology overlays
+│
+├── src/                                # The Python Logic Core
+│   ├── 01_upstream_pipeline/           # The Tombstone (Reference for FASTQ/BAM -> Matrix)
+│   └── 02_analysis_scripts/            # The 5-Sigma Pipeline Engines
+│       ├── P02_matrix_construction.py  # Data ingestion and tensor formatting
+│       ├── P03_qc_filtering.py         # Phase I: 5-MAD outlier detection and matrix purge
+│       ├── P04_clustering.py           # Phase II: Latent geometry, KNN, and Leiden resolution arrays
+│       ├── P05_top_markers.py          # Phase III: Wilcoxon rank-sum extraction and lineage validation
+│       └── P06_annotation.py           # Phase IV: Ledger injection, ontology mapping, and final ML Tensor
+│
+├── .gitattributes                      # Git LFS and line-ending configurations
+├── .gitignore                          # Exclusion rules (ignores large *.h5ad files, tracks code)
+├── environment.yml                     # The "Laws of Physics": Conda dependencies
+├── LICENSE                             # MIT License
+└── README.md                           # The Forensic Log: Project Mission and Constraints
