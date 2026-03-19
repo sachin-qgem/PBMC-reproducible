@@ -14,6 +14,7 @@ RESULTS_DIR = results
 help:
 	@echo "PBMC3k-Reproducible Pipeline Execution Console"
 	@echo "--------------------------------------------"
+	@echo "------This Pipeline is only for Single Donor Dataset, Development for multi_donor,batch integration and correction going on at this moment----------------"
 	@echo "Available commands:"
 	@echo "  make setup      - Forges the isolated Conda environment from environment.yml"
 	@echo "  make pipeline   - Executes the entire forensic pipeline end-to-end"
