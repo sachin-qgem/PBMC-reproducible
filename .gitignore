@@ -14,8 +14,12 @@ notebooks/*.ipynb
 notebooks/
 # --- Data & Artifacts (CRITICAL) ---
 # We do not push heavy matter to the repository.
-data/
-
+data/celltypist_models
+data/objects
+data/raw/pbmc3k_filtered_gene_bc_matrices/hg19
+data/raw/pbmc3k_raw_gene_bc_matrices/hg19
+data/raw/pbmc3k_molecule_info.h5
+data/reconstructed_matrices_final
 cache/
 # --- OS Noise ---
 .DS_Store
@@ -25,5 +29,5 @@ Thumbs.db
 logs/
 *.log
 openh5file.py
-P03a_forensic_knee_plot.py
+
 *.ipynb
