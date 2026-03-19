@@ -666,6 +666,18 @@ def cast_projectable_data_on_training_data(
     del adata_project, adata_training
     gc.collect()
 
+def calculate_dynamic_gravity(n_cells: int) -> int:
+    """
+    Deterministically scales the KNN gravitational reach based on the 
+    total number of cells in the manifold to prevent over-bridging voids.
+    """
+    if n_cells < 5000:
+        return 15  # Low gravity for small, fragile manifolds (3k dataset)
+    elif n_cells < 20000:
+        return 20  # Medium gravity for intermediate sets
+    else:
+        return 30  # High gravity for massive continents (33k dataset)
+
 
 def orchestrator_A(h5ad_path: str, save_folder_path: str, cell_cycle_genes_path: str) -> dict:
     """
@@ -694,9 +706,14 @@ def orchestrator_A(h5ad_path: str, save_folder_path: str, cell_cycle_genes_path:
     
     cell_cycle_check(training_file_path, cell_cycle_genes_path, 10, 10, 0.05, 'training')
     npr_hvg_pca_recal(training_file_path, 'training_file')
-    macro_res = stability_audit(training_file_path,'macro',0.01,0.21,0.003,30)
+    adata_temp = load_evidence(training_file_path)
+    total_cells = adata_temp.n_obs
+    del adata_temp
+    macro_gravity = calculate_dynamic_gravity(total_cells)
+    print(f"\n[PHYSICS] Manifold contains {total_cells} cells. Setting Macro Gravity (k) to {macro_gravity}")
+    macro_res = stability_audit(training_file_path,'macro',0.01,0.21,0.003,macro_gravity)
     macro_leiden_key, macro_neighbors_key = knn_umap_leiden(
-        training_file_path, n_neighbors=30, n_pcs=10, leiden_res=macro_res, key_name='macro'
+        training_file_path, n_neighbors=macro_gravity, n_pcs=10, leiden_res=macro_res, key_name='macro'
     )
     
     micro_filepaths_dict = divide_and_save_dataset_based_on_macro_or_micro_clusters(
