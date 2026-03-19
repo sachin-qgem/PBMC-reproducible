@@ -289,7 +289,7 @@ def knn_umap_leiden(
     return leiden_key, neighbors_key
            
           
-def stability_audit(training_filepath: str, key_for_saving_images: str) -> float:
+def stability_audit(training_filepath: str, key_for_saving_images: str,res_start: float,res_end: float,res_step: float,n_neighbors: int) -> float:
     """
     Executes an automated resolution sweep to identify the most stable 
     clustering plateau, evaluates robustness via subsampling, and checks 
@@ -314,11 +314,11 @@ def stability_audit(training_filepath: str, key_for_saving_images: str) -> float
         print("\n[AUDIT] Initiating clustering stability audit...")
         print("  -> [TEST 1] Resolution Sweep (0.1 to 2.0)...")
         
-        resolutions = np.arange(0.1, 2.1, 0.03).tolist()
+        resolutions = np.arange(res_start,res_end,res_step).tolist()
         results = []
         
         sc.pp.neighbors(
-            adata_A, n_neighbors=15, n_pcs=10, method='umap', 
+            adata_A, n_neighbors=n_neighbors, n_pcs=10, method='umap', 
             knn=True, metric='euclidean', random_state=42
         )
         
@@ -694,9 +694,9 @@ def orchestrator_A(h5ad_path: str, save_folder_path: str, cell_cycle_genes_path:
     
     cell_cycle_check(training_file_path, cell_cycle_genes_path, 10, 10, 0.05, 'training')
     npr_hvg_pca_recal(training_file_path, 'training_file')
-    
+    macro_res = stability_audit(training_file_path,'macro',0.01,0.21,0.003,30)
     macro_leiden_key, macro_neighbors_key = knn_umap_leiden(
-        training_file_path, n_neighbors=15, n_pcs=10, leiden_res=0.05, key_name='macro'
+        training_file_path, n_neighbors=30, n_pcs=10, leiden_res=macro_res, key_name='macro'
     )
     
     micro_filepaths_dict = divide_and_save_dataset_based_on_macro_or_micro_clusters(
@@ -711,7 +711,7 @@ def orchestrator_A(h5ad_path: str, save_folder_path: str, cell_cycle_genes_path:
             continue
             
         npr_hvg_pca_recal(filepath, keys)
-        ref_res = stability_audit(filepath, keys)
+        ref_res = stability_audit(filepath, keys,0.1,2.1,0.03,15)
         
         if ref_res is not None:
             cell_cycle_check(filepath, cell_cycle_genes_path, 10, 10, ref_res, keys)
