@@ -1,8 +1,8 @@
+```markdown
 # PBMC3k-reproducible
 
 **Status:** EXECUTION MODE  
 **Objective:** Reproduce the PBMC3k dataset analysis from First Principles.  
-
 
 **⚠️⚠️⚠️THIS IS EXPLICITLY FOR SINGLE DONOR ONLY AT THIS MOMENT. DEVELOPMENT GOING ON FOR MULTI_DONOR, BATCH INTEGRATION AND CORRECTION⚠️⚠️⚠️**
 
@@ -30,15 +30,49 @@ We are auditing the pipeline to validate our Theory of Variance. We assume the s
 
 ---
 
+### ⚙️ Ignition & Environment Setup
+
+This pipeline requires a strictly controlled computational environment and the base 10x Genomics matrices to initiate the reconstruction. 
+
+**1. Clone the repository:**
+```bash
+git clone <your-repo-url>
+cd PBMC3k-reproducible
+```
+
+**2. Acquire the Genesis Data:**
+Because raw sequencing matrices are heavy matter, they are excluded from version control. You must supply the starting physical object. 
+* Download the **Filtered gene-barcode matrices** from the [10x Genomics PBMC3k Dataset Page](https://www.10xgenomics.com/resources/datasets/3-k-pbm-cs-from-a-healthy-donor-1-standard-1-1-0).
+* Reconstruct the required directory path and place the extracted `hg19/` folder (containing `matrix.mtx`, `barcodes.tsv`, and `genes.tsv`) exactly here:
+```bash
+mkdir -p data/raw/pbmc3k_filtered_gene_bc_matrices/
+# Extract your downloaded files into this folder
+```
+
+**3. Forge the Environment:**
+Synthesize the isolated Python environment using the locked dependencies.
+```bash
+make setup
+```
+
+**4. Activate and Execute:**
+With the data staged and the environment forged, hand control over to the Orchestration Engine.
+```bash
+conda activate ./.conda
+make pipeline
+```
+
+---
+
 ### Repository Structure
 
-```
+```text
 /PBMC3k-reproducible
 │
-├── .conda/                             # Isolated thermodynamic environment (Python runtime)(Hidden Not uploaded)
-├── cache/                              # Temporary execution buffers (Hidden Not uploaded)
+├── .conda/                             # Isolated thermodynamic environment (Python runtime)
+├── cache/                              # Temporary execution buffers
 │
-├── data/                               # The Data Lake (Hidden Not uploaded)
+├── data/                               # The Data Lake
 │   ├── celltypist_models/              # Automated reference-based annotation models
 │   ├── objects/                        # Checkpointed AnnData (.h5ad) state vectors
 │   ├── raw/                            # Immutable 10x Genomics inputs
@@ -56,6 +90,7 @@ We are auditing the pipeline to validate our Theory of Variance. We assume the s
 │   └── universal_ontology_id_dict.json # Standardized Cell Ontology (CL) mapping
 │
 ├── docs/                               # Project documentation and phase roadmaps
+├── notebooks/                          # Audits and experimental derivations
 │
 ├── results/                            # Output staging and visual telemetry
 │   └── figures/                        # The Visual Proofs
@@ -67,7 +102,7 @@ We are auditing the pipeline to validate our Theory of Variance. We assume the s
 ├── src/                                # The Python Logic Core
 │   ├── 01_upstream_pipeline/           # The Tombstone (Reference for FASTQ/BAM -> Matrix)
 │   └── 02_analysis_scripts/            # The 5-Sigma Pipeline Engines
-│       ├── P02_matrix_construction.py  # Data ingestion and tensor formatting(!you can run cellbender on linux if you want. I have used filtered gene matrices in P03 as I only have macos)
+│       ├── P02_matrix_construction.py  # Data ingestion and tensor formatting
 │       ├── P03_qc_filtering.py         # Phase I: 5-MAD outlier detection and matrix purge
 │       ├── P04_clustering.py           # Phase II: Latent geometry, KNN, and Leiden resolution arrays
 │       ├── P05_top_markers.py          # Phase III: Wilcoxon rank-sum extraction and lineage validation
@@ -77,4 +112,9 @@ We are auditing the pipeline to validate our Theory of Variance. We assume the s
 ├── .gitignore                          # Exclusion rules (ignores large *.h5ad files, tracks code)
 ├── environment.yml                     # The "Laws of Physics": Conda dependencies
 ├── LICENSE                             # MIT License
+├── openh5file.py                       # Utility script for direct HDF5 layer inspection
+├── practice.ipynb                      # Scratchpad for functional testing
+├── Makefile                            # Master Execution Console
 └── README.md                           # The Forensic Log: Project Mission and Constraints
+```
+```
