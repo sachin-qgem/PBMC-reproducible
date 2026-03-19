@@ -4,7 +4,7 @@
 **Objective:** Reproduce the PBMC3k dataset analysis from First Principles.  
 
 
-**!!!THIS IS EXPLICITLY FOR SINGLE DONOR ONLY AT THIS MOMENT. DEVELOPMENT GOING ON FOR MULTI_DONOR, BATCH INTEGRATION AND CORRECTION!!!**
+**⚠️⚠️⚠️THIS IS EXPLICITLY FOR SINGLE DONOR ONLY AT THIS MOMENT. DEVELOPMENT GOING ON FOR MULTI_DONOR, BATCH INTEGRATION AND CORRECTION⚠️⚠️⚠️**
 
 This is NOT a tutorial. This is a **Forensic Reconstruction**.  
 We are auditing the pipeline to validate our Theory of Variance. We assume the standard pipeline might be flawed and requires rigorous computational proof at every structural node.
