@@ -15,7 +15,8 @@ notebooks/
 # --- Data & Artifacts (CRITICAL) ---
 # We do not push heavy matter to the repository.
 data/
-docs
+
+cache/
 # --- OS Noise ---
 .DS_Store
 Thumbs.db
