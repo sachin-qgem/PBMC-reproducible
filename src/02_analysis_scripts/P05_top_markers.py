@@ -47,9 +47,10 @@ def load_evidence(h5ad_path: str) -> ad.AnnData:
 def rank_gene_groups_wilcoxon(
     adata_path: str, 
     leiden_key: str, 
-    annotation_manual_dict: dict, 
+    annotation_manual_dict: dict,
+    ontology_cl_id_manual_dict : dict,
     quantile: float = 0.9375
-) -> dict:
+) -> tuple:
     """
     Executes a Wilcoxon Rank-Sum test to extract defining thermodynamic 
     markers for each topological state. Updates the master annotation ledger.
@@ -62,6 +63,8 @@ def rank_gene_groups_wilcoxon(
         The observation column defining the cluster topologies.
     annotation_manual_dict : dict
         The active tracking dictionary for manual annotation states.
+    ontology_cl_id_manual_dict : dict
+        The active tracking dictionary for manual cl_ID states.
     quantile : float, default 0.9375
         The statistical threshold for isolating highly significant markers.
 
@@ -138,6 +141,8 @@ def rank_gene_groups_wilcoxon(
             key=lambda x: int(x) if str(x).isdigit() else x
         )
         annotation_manual_dict[leiden_key] = {str(c): None for c in clusters}
+        ontology_cl_id_manual_dict[leiden_key] = {str(c): None for c in clusters}
+
         print(f"[SUCCESS] Appended {len(clusters)} null states to ledger.")
     else:
         print(f"[WARNING] Key '{leiden_key}' not found in matrix. Ledger bypassed.")
@@ -146,7 +151,7 @@ def rank_gene_groups_wilcoxon(
     del adata, df, df_new, df_mask_1, df_mask_1_sorted, df_final
     gc.collect()
     
-    return annotation_manual_dict
+    return annotation_manual_dict,ontology_cl_id_manual_dict
 
 
 def execute_absence_cross_validation(
@@ -337,7 +342,8 @@ def wide_span_plots(
 def orc_project(
     dict_b_path: str, 
     curated_marker_list_path: str, 
-    annotation_save_path: str
+    annotation_save_path: str,
+    ontology_cl_id_path: str
 ) -> None:
     """
     Master orchestrator for Phase III. Ingests the Orchestrator B map, 
@@ -352,7 +358,8 @@ def orc_project(
         Path to the JSON of canonical lineage markers.
     annotation_save_path : str
         Target output path for the generated `annotation_manual.json` ledger.
-
+    ontology_cl_id_path : str
+        Target output path for the generated `ontology_cl_id_manual.json` ledger
     Returns
     -------
     None
@@ -372,6 +379,7 @@ def orc_project(
         dict_b = json.load(json_file)
         
     annotation_manual_dict = {}
+    ontology_cl_id_manual_dict = {}
     macro_path_key, macro_leiden_key, micro_paths_key, micro_leiden_key = None, None, None, None
     
     # Robust dictionary key extraction
@@ -395,8 +403,8 @@ def orc_project(
     if macro_path and macro_leiden:
         if op.exists(macro_path):
             print(f"\n[MACRO] Locking anchor '{macro_leiden}' for path: {macro_path}")
-            annotation_manual_dict = rank_gene_groups_wilcoxon(
-                macro_path, macro_leiden, annotation_manual_dict
+            annotation_manual_dict,ontology_cl_id_manual_dict = rank_gene_groups_wilcoxon(
+                macro_path, macro_leiden, annotation_manual_dict,ontology_cl_id_manual_dict
             )
             print("[MACRO] Thermodynamic extraction complete.")
             auto_ref_mapping(macro_path, macro_model, macro_leiden)
@@ -425,8 +433,8 @@ def orc_project(
             continue
             
         print(f"  -> Anchor locked: '{active_leiden_col}'. Executing Wilcoxon Engine...")
-        annotation_manual_dict = rank_gene_groups_wilcoxon(
-            file_path, active_leiden_col, annotation_manual_dict
+        annotation_manual_dict,ontology_cl_id_manual_dict = rank_gene_groups_wilcoxon(
+            file_path, active_leiden_col, annotation_manual_dict,ontology_cl_id_manual_dict
         )
         auto_ref_mapping(file_path, micro_model, active_leiden_col)
         
@@ -441,8 +449,11 @@ def orc_project(
     # Terminal Seal
     with open(annotation_save_path, 'w') as f:
         json.dump(annotation_manual_dict, f, indent=4)
+    with open(ontology_cl_id_path, 'w') as f:
+        json.dump(ontology_cl_id_manual_dict, f, indent=4)
         
     print(f"\n[SEALED] Master Annotation Ledger written to: {annotation_save_path}")
+    print(f"\n[SEALED] Master CL_ID Ledger written to: {ontology_cl_id_path}")
 
 
 
@@ -455,11 +466,12 @@ if __name__ == '__main__':
     dict_file_path = './data/objects/Dictionary_of_returns_from_orch_B.json'
     curated_marker_path = './data/Teichlab_curated_markers.json'
     annotation_save_path = './data/objects/annotation_manual_empty.json'
-    
+    ontology_cl_id_path = './data/objects/ontology_cl_id_manual_empty.json'
     orc_project(
         dict_b_path=dict_file_path, 
         curated_marker_list_path=curated_marker_path, 
-        annotation_save_path=annotation_save_path
+        annotation_save_path=annotation_save_path,
+        ontology_cl_id_path=ontology_cl_id_path
     )
     
     print("\n[SUCCESS] PHASE III COMPLETE. AWAITING HUMAN ANNOTATION.")
