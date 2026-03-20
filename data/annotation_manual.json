@@ -1,0 +1,18 @@
+{
+    "macro_leiden" : {
+        "0": "Lymphoid (T/NK) Lineage",
+        "1": "Myeloid Lineage",
+        "2": "B-Cell Lineage"
+    },
+    "macro_leiden_0_micro_leiden" : {
+        "0": "CD4+ Naive T-Cell",
+        "1": "CD4+ Memory T-Cell",
+        "2": "CD8+ Cytotoxic T-Cell",
+        "3": "CD16+ NK cells"
+    },
+    "macro_leiden_1_micro_leiden" : {
+        "0": "Monocyte-derived Dendritic Cell",
+        "1": "CD14+ Classical Monocyte",
+        "2": "CD16+ Non-Classical Monocyte"
+    }
+}
