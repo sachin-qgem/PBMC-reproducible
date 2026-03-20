@@ -220,6 +220,13 @@ def execute_absence_cross_validation(
     # PHASE 3: The Projection
     print(f"  -> Projection Dictionary Assembled. Total Foreign Vectors: {len(contamination_dict)}")
     adata_target = load_evidence(current_micro_path)
+    raw_clusters = adata_target.obs[current_leiden_key].dropna().unique()
+    sorted_clusters = sorted(raw_clusters, key=lambda x: int(x) if str(x).isdigit() else x)
+    adata_target.obs[current_leiden_key] = pd.Categorical(
+        adata_target.obs[current_leiden_key].astype(str), 
+        categories=[str(c) for c in sorted_clusters], 
+        ordered=True
+    )
     available_genes = set(adata_target.var_names)
     
     safe_contamination_dict = {}
