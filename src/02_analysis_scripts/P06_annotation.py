@@ -127,10 +127,10 @@ def orc_annotation(
                 print(f"  -> [REMEDY] You must utilize the UI or manually populate the JSON before injecting.")
             else:
                 adata.obs['manual_labels'] = adata.obs[macro_leiden].map(annotation_manual[macro_leiden])
-                adata.obs['human_CL_ID'] = adata.obs['manual_labels'].map(ontology_cl_id_dict_manual)
+                adata.obs['human_CL_ID'] = adata.obs['manual_labels'].map(ontology_cl_id_dict_manual[macro_leiden])
             
             if 'majority_voting' in adata.obs:
-                adata.obs['oracle_CL_ID'] = adata.obs['majority_voting'].map(ontology_cl_id_dict_manual)
+                adata.obs['oracle_CL_ID'] = adata.obs['majority_voting'].map(ontology_cl_id_dict_manual[macro_leiden])
                 
                 # Drop NaNs to allow strict ARI comparison
                 valid_mask = adata.obs['human_CL_ID'].notna() & adata.obs['oracle_CL_ID'].notna()
@@ -170,12 +170,13 @@ def orc_annotation(
             parent_dict_key = '_'.join(parts[:-1])
             
             inherited_label = annotation_manual.get(parent_dict_key, {}).get(cluster_id)
+            inherited_cl_id = ontology_cl_id_dict_manual.get(parent_dict_key, {}).get(cluster_id)
             print(f"  -> Terminal State detected. Inheriting Parent Label: '{inherited_label}'")
             if inherited_label is None:
                 print(f"  -> [REMEDY] You must utilize the UI or manually populate the JSON before injecting.")
             else:
                 adata.obs['manual_labels'] = inherited_label
-                adata.obs['human_CL_ID'] = adata.obs['manual_labels'].map(ontology_cl_id_dict_manual)
+                adata.obs['human_CL_ID'] = inherited_cl_id
             
         else:
             # Handle Standard Active Micro States
@@ -186,11 +187,11 @@ def orc_annotation(
                 adata.obs['manual_labels'] = adata.obs[active_leiden_col].map(
                 annotation_manual[active_leiden_col]
             )
-                adata.obs['human_CL_ID'] = adata.obs['manual_labels'].map(ontology_cl_id_dict_manual)
+                adata.obs['human_CL_ID'] = adata.obs['manual_labels'].map(ontology_cl_id_dict_manual[active_leiden_col])
 
         # Oracle Alignment Check
         if 'majority_voting' in adata.obs:
-            adata.obs['oracle_CL_ID'] = adata.obs['majority_voting'].map(ontology_cl_id_dict_manual)
+            adata.obs['oracle_CL_ID'] = adata.obs['majority_voting'].map(ontology_cl_id_dict_manual[active_leiden_col])
             
             valid_mask = adata.obs['human_CL_ID'].notna() & adata.obs['oracle_CL_ID'].notna()
             if valid_mask.sum() > 0:
@@ -354,15 +355,15 @@ if __name__ == '__main__':
     dict_file_training_path = './data/objects/Dictionary_of_returns_from_orch_A.json'
     dict_file_projected_path = './data/objects/Dictionary_of_returns_from_orch_B.json'
     annotations_path = './data/objects/annotation_manual_empty.json'
-    universal_ontology_id_path = './data/universal_ontology_id_dict.json'
+    ontology_id_path = '.data/objects/ontology_cl_id_manual_empty.json'
     master_df_csv_path = './data/objects/master_labels_df.csv'
     
     # 1. Map Training Set
-    orc_annotation(dict_file_training_path, annotations_path, universal_ontology_id_path)
+    orc_annotation(dict_file_training_path, annotations_path, ontology_id_path)
     label_mapping_data_frame_all(dict_file_training_path, master_df_csv_path)
     
     # 2. Map Projected Set
-    orc_annotation(dict_file_projected_path, annotations_path, universal_ontology_id_path)
+    orc_annotation(dict_file_projected_path, annotations_path, ontology_id_path)
     label_mapping_data_frame_all(dict_file_projected_path, master_df_csv_path)
     
     # 3. Final Artifact Recombination

@@ -224,3 +224,4 @@ dependencies:
   - soupsieve
   - libmpdec
   - celltypist
+  - streamlit
