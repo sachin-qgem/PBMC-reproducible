@@ -123,8 +123,11 @@ def orc_annotation(
             adata = load_evidence(macro_path)
             
             # Vectorized assignment
-            adata.obs['manual_labels'] = adata.obs[macro_leiden].map(annotation_manual[macro_leiden])
-            adata.obs['human_CL_ID'] = adata.obs['manual_labels'].map(ontology_cl_id_dict_manual)
+            if not annotation_manual[macro_leiden].values():
+                print(f"  -> [REMEDY] You must utilize the UI or manually populate the JSON before injecting.")
+            else:
+                adata.obs['manual_labels'] = adata.obs[macro_leiden].map(annotation_manual[macro_leiden])
+                adata.obs['human_CL_ID'] = adata.obs['manual_labels'].map(ontology_cl_id_dict_manual)
             
             if 'majority_voting' in adata.obs:
                 adata.obs['oracle_CL_ID'] = adata.obs['majority_voting'].map(ontology_cl_id_dict_manual)
@@ -168,17 +171,22 @@ def orc_annotation(
             
             inherited_label = annotation_manual.get(parent_dict_key, {}).get(cluster_id)
             print(f"  -> Terminal State detected. Inheriting Parent Label: '{inherited_label}'")
-            
-            adata.obs['manual_labels'] = inherited_label
-            adata.obs['human_CL_ID'] = adata.obs['manual_labels'].map(ontology_cl_id_dict_manual)
+            if inherited_label is None:
+                print(f"  -> [REMEDY] You must utilize the UI or manually populate the JSON before injecting.")
+            else:
+                adata.obs['manual_labels'] = inherited_label
+                adata.obs['human_CL_ID'] = adata.obs['manual_labels'].map(ontology_cl_id_dict_manual)
             
         else:
             # Handle Standard Active Micro States
             print(f"  -> Active State detected. Mapping via: '{active_leiden_col}'")
-            adata.obs['manual_labels'] = adata.obs[active_leiden_col].map(
+            if not annotation_manual[active_leiden_col].values():
+                print(f"  -> [REMEDY] You must utilize the UI or manually populate the JSON before injecting.")
+            else:
+                adata.obs['manual_labels'] = adata.obs[active_leiden_col].map(
                 annotation_manual[active_leiden_col]
             )
-            adata.obs['human_CL_ID'] = adata.obs['manual_labels'].map(ontology_cl_id_dict_manual)
+                adata.obs['human_CL_ID'] = adata.obs['manual_labels'].map(ontology_cl_id_dict_manual)
 
         # Oracle Alignment Check
         if 'majority_voting' in adata.obs:
