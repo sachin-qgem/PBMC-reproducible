@@ -1,5 +1,6 @@
 import gc
 import json
+import os
 import os.path as op
 from pathlib import Path
 
@@ -11,6 +12,7 @@ from sklearn.metrics import adjusted_rand_score
 # Global environment settings
 ad.settings.allow_write_nullable_strings = True
 sc.settings.figdir = "./results/figures/p06_annotation"
+os.makedirs(sc.settings.figdir, exist_ok=True)
 sc.settings.verbosity = 0
 plt_fig_dir = Path('./results/figures/p06_annotation')
 plt_fig_dir.mkdir(parents=True, exist_ok=True)

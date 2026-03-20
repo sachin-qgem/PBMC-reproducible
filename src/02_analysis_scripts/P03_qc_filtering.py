@@ -12,6 +12,7 @@ import scipy.stats as sps
 # Global environment settings
 ad.settings.allow_write_nullable_strings = True
 sc.settings.figdir = "./results/figures/p03_qc_filtering"
+os.makedirs(sc.settings.figdir, exist_ok=True)
 sc.settings.verbosity = 3
 
 
@@ -143,7 +144,8 @@ def audit_distribution(
         adata, 
         violin_keys, 
         jitter=0.4, 
-        multi_panel=True, 
+        multi_panel=True,
+        show=False, 
         save=f"_{stagename}.png"
     )
     sc.pl.scatter(
@@ -151,7 +153,8 @@ def audit_distribution(
         x=scatter_x, 
         y=scatter_y, 
         color=scatter_color,
-        size=5, 
+        size=5,
+        show=False,
         save=f"_{stagename}.png"
     )
 
@@ -262,7 +265,12 @@ if __name__ == "__main__":
     # Define absolute topological paths
     mtx_path = "data/raw/pbmc3k_filtered_gene_bc_matrices/hg19"
     pbmc3k_qc_h5ad_path = "data/objects/pbmc3k_qc.h5ad"
-    
+    if not os.path.exists(mtx_path):
+        raise FileNotFoundError(
+            f"[CRITICAL FAILURE] Genesis matrix missing at {mtx_path}. "
+            "Ensure the 10x raw files are staged before execution."
+        )
+    os.makedirs(os.path.dirname(pbmc3k_qc_h5ad_path), exist_ok=True)
     orch_qc_filtering(
         mtx_path=mtx_path, 
         pbmc3k_qc_h5ad_path=pbmc3k_qc_h5ad_path

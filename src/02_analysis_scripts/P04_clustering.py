@@ -1,5 +1,6 @@
 import gc
 import json
+import os
 import warnings
 from pathlib import Path
 
@@ -15,6 +16,7 @@ from sklearn.model_selection import train_test_split
 # Global environment settings
 ad.settings.allow_write_nullable_strings = True
 sc.settings.figdir = "./results/figures/p04_clustering"
+os.makedirs(sc.settings.figdir, exist_ok=True)
 sc.settings.verbosity = 0
 plt_fig_dir = Path('./results/figures/p04_clustering')
 plt_fig_dir.mkdir(parents=True, exist_ok=True)
@@ -831,8 +833,9 @@ if __name__ == '__main__':
     # Relative paths
     h5ad_path = './data/objects/pbmc3k_qc.h5ad'
     save_folder_path = './data/objects'
+    os.makedirs(os.path.dirname(save_folder_path), exist_ok=True)
 
-    cell_cycle_genes_path = '/Users/qgem/GitHub/PBMC3k-reproducible/data/regev_lab_cell_cycle_genes.txt'
+    cell_cycle_genes_path = './data/regev_lab_cell_cycle_genes.txt'
     
     dict_A = orchestrator_A(h5ad_path, save_folder_path, cell_cycle_genes_path)
     dict_B = orchestrator_B(dict_A)

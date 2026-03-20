@@ -15,7 +15,8 @@ H5_PATH = "data/raw/pbmc3k_molecule_info.h5"
 # We still need the gene names from the file you have, because H5 lost them
 GENES_TSV_PATH = "data/raw/pbmc3k_filtered_gene_bc_matrices/hg19/genes.tsv"
 OUTPUT_DIR = "data/reconstructed_matrices_final"
-
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+os.makedirs(GENES_TSV_PATH, exist_ok=True)
 def decode_barcode(n, length=16):
     """
     Decodes a 2-bit integer back to ACGT string.

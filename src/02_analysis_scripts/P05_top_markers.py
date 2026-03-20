@@ -1,5 +1,6 @@
 import gc
 import json
+import os
 import os.path as op
 import warnings
 from pathlib import Path
@@ -15,10 +16,12 @@ import seaborn as sns
 # Global environment settings
 ad.settings.allow_write_nullable_strings = True
 sc.settings.figdir = "./results/figures/p05_top_markers"
+os.makedirs(sc.settings.figdir, exist_ok=True)
 sc.settings.verbosity = 0
 plt_fig_dir = Path('./results/figures/p05_top_markers')
 plt_fig_dir.mkdir(parents=True, exist_ok=True)
-
+ct.models.models_path = './data/celltypist_models'
+os.makedirs(ct.models.models_path, exist_ok=True)
 
 def load_evidence(h5ad_path: str) -> ad.AnnData:
     """
@@ -438,7 +441,7 @@ def orc_project(
 
 if __name__ == '__main__':
     # Initialize CellTypist environment
-    ct.models.models_path = './data/celltypist_models'
+    
     ct.models.download_models(force_update=True, model=['Immune_All_Low.pkl', 'Immune_All_High.pkl'])
     
     # Absolute paths
