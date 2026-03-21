@@ -349,7 +349,7 @@ def main_artifact_labelling(main_h5ad_path: str, master_df_csv_path: str) -> str
 
 
 
-if __name__ == '__main__':
+def main():
     # Absolute Definitions
     main_h5ad_path = './data/objects/pbmc3k_qc.h5ad'
     dict_file_training_path = './data/objects/Dictionary_of_returns_from_orch_A.json'
@@ -370,3 +370,6 @@ if __name__ == '__main__':
     main_artifact_labelling(main_h5ad_path, master_df_csv_path)
     
     print("\n[SUCCESS] PIPELINE COMPLETE. ML TENSOR IS READY FOR DEPLOYMENT.")
+
+if __name__ == '__main__':
+    main()

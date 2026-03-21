@@ -415,17 +415,10 @@ def main() -> None:
                         
                         if st.button("🚀 Execute P06 & Generate ML Artifact", type="secondary"):
                             with st.spinner("Injecting topologies and recombining global matrix..."):
-                                # Command the Linux server to run your P06 script
-                                result = subprocess.run(
-                                    ["python", "src/02_analysis_scripts/P06_annotation.py"], 
-                                    capture_output=True, 
-                                    text=True
-                                )
-                                
-                                if result.returncode == 0:
+                                try:
+                                    # Native Python Execution via the Module Wormhole
+                                    P06_annotation.main()
                                     st.success("Matrix successfully recombined and sealed!")
-                                    with st.expander("View P06 Execution Logs"):
-                                        st.code(result.stdout)
                                         
                                     # Locate the generated artifact to offer a download
                                     ml_ready_path = "./data/objects/pbmc3k_qc_ML_Ready.h5ad"
@@ -437,9 +430,9 @@ def main() -> None:
                                                 file_name="pbmc3k_ML_Ready.h5ad",
                                                 mime="application/octet-stream"
                                             )
-                                else:
-                                    st.error("P06 Execution Failed. Review the thermodynamic fracture logs below.")
-                                    st.code(result.stderr)
+                                except Exception as e:
+                                    st.error(f"P06 Execution Failed. Thermodynamic fracture detected:")
+                                    st.code(str(e))
                     else:
                         st.error(f"[ERROR] Required observation column '{cluster_col}' missing from matrix.")
                 else:
