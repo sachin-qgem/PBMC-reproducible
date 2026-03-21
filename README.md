@@ -1,3 +1,14 @@
+---
+title: PBMC3k Single Donor Healthy
+emoji: 🧬
+colorFrom: indigo
+colorTo: blue
+sdk: streamlit
+sdk_version: 1.31.0
+app_file: app.py
+pinned: false
+---
+
 # PBMC3k-reproducible
 
 **Status:** EXECUTION MODE  
