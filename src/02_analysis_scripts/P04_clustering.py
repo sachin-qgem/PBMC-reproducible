@@ -688,7 +688,8 @@ def calculate_dynamic_gravity(file_path:str) -> int:
     adata_temp = load_evidence(file_path)
     n_cells = adata_temp.n_obs
     del adata_temp
-    if n_cells < 1000:
+    
+    if n_cells < 1500:
         return 15
     elif n_cells < 5000:
         return 20
