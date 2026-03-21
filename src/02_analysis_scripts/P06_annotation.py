@@ -189,18 +189,18 @@ def orc_annotation(
             )
                 adata.obs['human_CL_ID'] = adata.obs['manual_labels'].map(ontology_cl_id_dict_manual[active_leiden_col])
 
-        # Oracle Alignment Check
-        if 'majority_voting' in adata.obs:
-            adata.obs['oracle_CL_ID'] = adata.obs['majority_voting'].map(ontology_cl_id_dict_manual[active_leiden_col])
-            
-            valid_mask = adata.obs['human_CL_ID'].notna() & adata.obs['oracle_CL_ID'].notna()
-            if valid_mask.sum() > 0:
-                ari_score = adjusted_rand_score(
-                    adata.obs.loc[valid_mask, 'human_CL_ID'].astype(str),
-                    adata.obs.loc[valid_mask, 'oracle_CL_ID'].astype(str)
-                )
-                adata.uns['Oracle_ARI_Score'] = float(ari_score)
-                print(f"  -> Oracle Alignment Score (ARI): {ari_score:.3f}")
+            # Oracle Alignment Check
+            if 'majority_voting' in adata.obs:
+                adata.obs['oracle_CL_ID'] = adata.obs['majority_voting'].map(ontology_cl_id_dict_manual[active_leiden_col])
+                
+                valid_mask = adata.obs['human_CL_ID'].notna() & adata.obs['oracle_CL_ID'].notna()
+                if valid_mask.sum() > 0:
+                    ari_score = adjusted_rand_score(
+                        adata.obs.loc[valid_mask, 'human_CL_ID'].astype(str),
+                        adata.obs.loc[valid_mask, 'oracle_CL_ID'].astype(str)
+                    )
+                    adata.uns['Oracle_ARI_Score'] = float(ari_score)
+                    print(f"  -> Oracle Alignment Score (ARI): {ari_score:.3f}")
 
         adata.write_h5ad(file_path)
         del adata
@@ -355,7 +355,7 @@ if __name__ == '__main__':
     dict_file_training_path = './data/objects/Dictionary_of_returns_from_orch_A.json'
     dict_file_projected_path = './data/objects/Dictionary_of_returns_from_orch_B.json'
     annotations_path = './data/objects/annotation_manual_empty.json'
-    ontology_id_path = '.data/objects/ontology_cl_id_manual_empty.json'
+    ontology_id_path = './data/objects/ontology_cl_id_manual_empty.json'
     master_df_csv_path = './data/objects/master_labels_df.csv'
     
     # 1. Map Training Set
