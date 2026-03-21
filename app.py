@@ -123,7 +123,7 @@ def render_visual_telemetry(sub_dir: str, title: str) -> None:
     cols = st.columns(2)
     for idx, img_path in enumerate(png_files):
         with cols[idx % 2]:
-            st.image(Image.open(img_path), caption=img_path.name, use_container_width=True)
+            st.image(Image.open(img_path), caption=img_path.name, use_column_width=True)
 
 # =============================================================================
 # MAIN ORCHESTRATION ENGINE
