@@ -188,16 +188,39 @@ def main() -> None:
 
     # --- TAB 2: VISUAL TELEMETRY ---
     with tab_telemetry:
-        st.markdown("### Physical Pipeline Artifacts")
-        st.markdown("Review the thermodynamic boundaries and topological maps before sealing annotations.")
-        
-        # Command the scanner to read the three physical directories
-        render_visual_telemetry("p03_qc_filtering", "Phase I: Quality Control")
-        st.divider()
-        render_visual_telemetry("p04_clustering", "Phase II: Topological Audits")
-        st.divider()
-        render_visual_telemetry("p05_top_markers", "Phase III: Marker Extractions")
+        st.header("📊 Visual Telemetry Vault")
+        st.markdown("Select an analytical sector to project physical evidence onto the dashboard.")
 
+        # 1. THE SECTOR MAP: Absolute 1-to-1 Mapping
+        # Keys are UI Labels, Values are physical folder names
+        SECTOR_MAP = {
+            "Phase I: Quality Control (P03)": "p03_qc_filtering",
+            "Phase II: Topological Audits (P04)": "p04_clustering",
+            "Phase III: Marker Extractions (P05)": "p05_top_markers"
+        }
+
+        # 2. THE SELECTION ENGINE
+        # This widget triggers a full script rerun on every change
+        selection = st.selectbox(
+            "Select Analytical Sector", 
+            options=list(SECTOR_MAP.keys()),
+            index=0,
+            key="telemetry_sector_selector" # Unique key forces DOM isolation
+        )
+
+        # 3. PHYSICAL RESOLUTION
+        target_sub_dir = SECTOR_MAP[selection]
+        
+        # Diagnostic Telemetry (Small text to verify the path in real-time)
+        st.caption(f"Scanning Physical Path: `./results/figures/{target_sub_dir}/`")
+
+        st.divider()
+
+        # 4. THE EXECUTION
+        # Using a container ensures the previous tab content is physically purged
+        with st.container():
+            render_visual_telemetry(target_sub_dir, selection)
+            
     # --- TAB 1: ANNOTATION ENGINE ---
     with tab_annotate:
         st.markdown("### Human-in-the-Loop Topology Verification & Mapping")
