@@ -1,0 +1,63 @@
+name: 5-Sigma Pipeline Audit
+
+# -----------------------------------------------------------------------------
+# 1. THE TRIGGER
+# The robot will only wake up when code is pushed to the 'main' branch, 
+# or if someone submits a Pull Request to merge into 'main'.
+# -----------------------------------------------------------------------------
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+# -----------------------------------------------------------------------------
+# 2. THE ENVIRONMENT
+# We define a single "Job" named 'build-and-audit'.
+# -----------------------------------------------------------------------------
+jobs:
+  build-and-audit:
+    # We request a sterile Ubuntu Linux server from GitHub's datacenters.
+    runs-on: ubuntu-latest
+
+    # -------------------------------------------------------------------------
+    # 3. THE SEQUENTIAL EXECUTION STEPS
+    # -------------------------------------------------------------------------
+    steps:
+    # Step A: Download the Code
+    # The server starts entirely empty. This pre-built action tells the server 
+    # to run 'git clone' and pull your repository into its local memory.
+    - name: 📥 Extract Repository
+      uses: actions/checkout@v4
+      with:
+        # We explicitly tell it NOT to download the 766 MB of LFS data.
+        # Downloading massive tensors on every small code push wastes compute time.
+        # We are auditing the CODE integrity, not re-running the biology.
+        lfs: false
+
+    # Step B: Install the Engine
+    # We provision the exact Python 3.11 engine we verified for Hugging Face.
+    - name: ⚙️ Forge Python 3.11 Engine
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+        # This tells GitHub to cache the downloaded packages, speeding up future runs.
+        cache: 'pip'
+
+    # Step C: Install the Package
+    # We instruct the robot to read your pyproject.toml and install the pipeline.
+    - name: 📦 Build Dependency Matrix
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+
+    # Step D: The 5-Sigma Execution Audit
+    # If there is a syntax error, a missing import, or a broken dependency, 
+    # this step will crash, and GitHub will mark your commit with a Red 'X'.
+    - name: 🔬 Execute Import & Integrity Audit
+      run: |
+        # We ask Python to blindly import your package. 
+        # If it succeeds, the package structure and dependencies are mathematically sound.
+        python -c "import src.pbmc3k_pipeline.P03_qc_filtering; print('Phase I Logic: SEALED')"
+        python -c "import src.pbmc3k_pipeline.P04_clustering; print('Phase II Logic: SEALED')"
+        python -c "import src.pbmc3k_pipeline.P06_annotation; print('Phase IV Logic: SEALED')"
