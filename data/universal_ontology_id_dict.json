@@ -1,21 +1,3 @@
-{
-    
-    "T cells": "CL:0000084",
-    "Lymphoid (T/NK) Lineage" : "CL:0000084",
-    "Monocytes" : "CL:0000860",
-    "Myeloid Lineage" : "CL:0000860",
-    "B cells" : "CL:0000236" ,
-    "B-Cell Lineage" : "CL:0000236",
-    "Tem/Trm cytotoxic T cells" : "CL:0000913",
-    "CD8+ Cytotoxic T-Cell" : "CL:0000913",
-    "Tcm/Naive helper T cells" : "CL:0000904",
-    "CD16+ NK cells" : "CL:0000623",
-    "CD4+ Memory T-Cell" : "CL:0000905",
-    "CD4+ Naive T-Cell" : "CL:0000904",
-    "Non-classical monocytes" : "CL:0000875",
-    "Classical monocytes" : "CL:0000860",
-    "CD16+ Non-Classical Monocyte" : "CL:0000875",
-    "CD14+ Classical Monocyte" : "CL:0000860",
-    "Monocyte-derived Dendritic Cell" : "CL:0000451"
-    
- }
+version https://git-lfs.github.com/spec/v1
+oid sha256:341898e71489b70538e18fbd8d5ff9cf494743fa13e07f633447cbd9a725d01e
+size 723

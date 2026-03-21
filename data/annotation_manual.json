@@ -1,18 +1,3 @@
-{
-    "macro_leiden" : {
-        "0": "Lymphoid (T/NK) Lineage",
-        "1": "Myeloid Lineage",
-        "2": "B-Cell Lineage"
-    },
-    "macro_leiden_0_micro_leiden" : {
-        "0": "CD4+ Naive T-Cell",
-        "1": "CD4+ Memory T-Cell",
-        "2": "CD8+ Cytotoxic T-Cell",
-        "3": "CD16+ NK cells"
-    },
-    "macro_leiden_1_micro_leiden" : {
-        "0": "Monocyte-derived Dendritic Cell",
-        "1": "CD14+ Classical Monocyte",
-        "2": "CD16+ Non-Classical Monocyte"
-    }
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:36c05b32a2b940613a555f9a84c15d656b666d41853fd1807bfd839bb05f1cf7
+size 494
