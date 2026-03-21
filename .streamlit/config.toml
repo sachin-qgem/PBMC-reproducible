@@ -1,0 +1,3 @@
+[server]
+# Expands the WebSocket ingestion limit from 200MB to 1024MB (1GB)
+maxUploadSize = 1024
