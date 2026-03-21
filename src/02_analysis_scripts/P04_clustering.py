@@ -674,8 +674,6 @@ def calculate_dynamic_gravity(file_path:str) -> int:
     Deterministically scales the KNN n_neighbors based on the 
     total number of cells in the manifold. 
     
-    Utilizes a base-2 logarithmic scaling law anchored at N=3000 (k=15)
-    to maintain constant topological connectivity without bridging voids.
     
     Parameters
     ----------
@@ -690,13 +688,14 @@ def calculate_dynamic_gravity(file_path:str) -> int:
     adata_temp = load_evidence(file_path)
     n_cells = adata_temp.n_obs
     del adata_temp
-    # The mathematical scaling law
-    raw_k = 15 + 5 * log2(n_cells / 3000.0)
-    
-    # Apply the thermodynamic floor and convert to strict integer
-    optimal_k = max(10, int(raw_k))
-    
-    return optimal_k
+    if n_cells < 1000:
+        return 15
+    elif n_cells < 5000:
+        return 20
+    elif n_cells < 15000:
+        return 25
+    else:
+        return 30
 
 
 def orchestrator_A(h5ad_path: str, save_folder_path: str, cell_cycle_genes_path: str) -> dict:
