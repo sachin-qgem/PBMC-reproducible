@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import scanpy as sc
 import seaborn as sns
+from math import log2
 from sklearn.metrics import adjusted_rand_score
 from sklearn.model_selection import train_test_split
 
@@ -430,7 +431,7 @@ def stability_audit(training_filepath: str, key_for_saving_images: str,res_start
         )
         adata_A_test_sub = adata_A[A_sub_idx].copy()
         
-        sc.pp.neighbors(adata_A_test_sub, n_neighbors=15, n_pcs=10, use_rep='X_pca')
+        sc.pp.neighbors(adata_A_test_sub, n_neighbors=n_neighbors, n_pcs=10, use_rep='X_pca')
         sc.tl.leiden(
             adata_A_test_sub, resolution=ref_res, key_added='leiden_sub', flavor='leidenalg'
         )
@@ -670,18 +671,32 @@ def cast_projectable_data_on_training_data(
 
 def calculate_dynamic_gravity(file_path:str) -> int:
     """
-    Deterministically scales the KNN n_neighbors reach based on the 
-    total number of cells in the manifold to prevent over-bridging voids.
+    Deterministically scales the KNN n_neighbors based on the 
+    total number of cells in the manifold. 
+    
+    Utilizes a base-2 logarithmic scaling law anchored at N=3000 (k=15)
+    to maintain constant topological connectivity without bridging voids.
+    
+    Parameters
+    ----------
+    file_path: str
+      of the adata whose n_cells to check.
+        
+    Returns
+    -------
+    int
+        The optimal n_neighbors (k) parameter.
     """
     adata_temp = load_evidence(file_path)
-    total_cells = adata_temp.n_obs
+    n_cells = adata_temp.n_obs
     del adata_temp
-    if total_cells < 5000:
-        return 15  # Low gravity for small, fragile manifolds (3k dataset)
-    elif total_cells < 20000:
-        return 20  # Medium gravity for intermediate sets
-    else:
-        return 30  # High gravity for massive continents (33k dataset)
+    # The mathematical scaling law
+    raw_k = 15 + 5 * log2(n_cells / 3000.0)
+    
+    # Apply the thermodynamic floor and convert to strict integer
+    optimal_k = max(10, int(raw_k))
+    
+    return optimal_k
 
 
 def orchestrator_A(h5ad_path: str, save_folder_path: str, cell_cycle_genes_path: str) -> dict:
@@ -731,12 +746,14 @@ def orchestrator_A(h5ad_path: str, save_folder_path: str, cell_cycle_genes_path:
             continue
             
         npr_hvg_pca_recal(filepath, keys)
-        ref_res = stability_audit(filepath, keys,0.1,2.1,0.03,15)
+        micro_n_neighbors = calculate_dynamic_gravity(file_path=filepath)
+        ref_res = stability_audit(filepath, keys,0.1,2.1,0.03,micro_n_neighbors)
         
         if ref_res is not None:
-            cell_cycle_check(filepath, cell_cycle_genes_path, 10, 10, ref_res, keys)
+            cell_cycle_check(filepath, cell_cycle_genes_path, n_neighbors=micro_n_neighbors,
+                              n_pcs=10, leiden_res=ref_res, file_save_key=keys)
             m_leiden, m_neighbors = knn_umap_leiden(
-                filepath, n_neighbors=10, n_pcs=15, leiden_res=ref_res, key_name=f'{keys}_micro'
+                filepath, n_neighbors=micro_n_neighbors, n_pcs=15, leiden_res=ref_res, key_name=f'{keys}_micro'
             )
             if m_leiden is not None:
                 micro_leiden_key_dict[keys] = m_leiden

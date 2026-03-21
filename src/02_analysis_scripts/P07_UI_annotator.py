@@ -2,7 +2,7 @@ import gc
 import json
 import os
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Any, Optional
 
 import anndata as ad
 import pandas as pd
@@ -10,43 +10,51 @@ import scanpy as sc
 import streamlit as st
 
 # =============================================================================
-# GLOBAL THERMODYNAMIC CONSTANTS
+# GLOBAL THERMODYNAMIC CONSTANTS & UI CONFIGURATION
 # =============================================================================
+# Must be the absolute first Streamlit command executed
 st.set_page_config(page_title="PBMC3k Dual-Ledger Annotation", layout="wide")
 
 DICT_B_PATH = "./results/Dictionary_of_returns_from_orch_B.json"
 ANNOTATION_PATH = "./results/annotation_manual.json"
 ONTOLOGY_PATH = "./results/ontology_cl_id_manual.json"
 
-# Initialize Session State RAM
-if "annotations" not in st.session_state:
-    st.session_state.annotations = {}
-if "ontologies" not in st.session_state:
-    st.session_state.ontologies = {}
-
 
 # =============================================================================
 # MEMORY I/O ENGINES
 # =============================================================================
 
+def initialize_session_vault() -> None:
+    """
+    Initializes the protected RAM vault to survive Streamlit's reactive execution loop.
+    
+    Variables stored in `st.session_state` persist across user interactions,
+    preventing the erasure of human inputs when the script re-runs.
+    """
+    if "annotations" not in st.session_state:
+        st.session_state.annotations = {}
+    if "ontologies" not in st.session_state:
+        st.session_state.ontologies = {}
+
+
 @st.cache_resource(show_spinner="Loading Heavy Tensor into RAM...")
 def load_tensor(filepath: str) -> Optional[ad.AnnData]:
     """
-    Loads an AnnData tensor into cached memory.
+    Loads an AnnData tensor into cached memory outside the Streamlit loop.
 
-    By caching the resource, we prevent Streamlit's continuous execution loop 
-    from continuously reloading the massive `.h5ad` file from the hard drive, 
-    preserving system memory and read/write bandwidth.
+    By decorating this function with `@st.cache_resource`, we physically pin 
+    the matrix in RAM. This prevents the engine from continuously querying the 
+    SSD and reloading the massive `.h5ad` file on every UI interaction.
 
     Parameters
     ----------
     filepath : str
-        The absolute or relative path to the `.h5ad` matrix.
+        The absolute or relative path to the physical `.h5ad` matrix.
 
     Returns
     -------
     Optional[ad.AnnData]
-        The loaded tensor object, or None if the file does not exist.
+        The loaded tensor object, or None if the physical file does not exist.
     """
     if os.path.exists(filepath):
         return sc.read_h5ad(filepath)
@@ -55,7 +63,7 @@ def load_tensor(filepath: str) -> Optional[ad.AnnData]:
 
 def load_json_ledger(filepath: str) -> Dict[str, Any]:
     """
-    Safely ingests a JSON ledger from the physical disk.
+    Safely ingests a JSON ledger from the physical disk into Python dictionaries.
 
     Parameters
     ----------
@@ -66,7 +74,7 @@ def load_json_ledger(filepath: str) -> Dict[str, Any]:
     -------
     Dict[str, Any]
         The dictionary contained in the JSON, or an empty dictionary if the 
-        file does not exist (representing a void state).
+        file does not exist (representing an uninitialized void state).
     """
     if os.path.exists(filepath):
         with open(filepath, 'r', encoding='utf-8') as f:
@@ -95,30 +103,34 @@ def save_json_ledger(filepath: str, data: Dict[str, Any]) -> None:
 
 
 # =============================================================================
-# MAIN ORCHESTRATION LOOP
+# MAIN ORCHESTRATION ENGINE
 # =============================================================================
 
 def main() -> None:
     """
     The primary execution loop for the Streamlit UI. Handles state initialization, 
-    matrix selection, dataframe rendering, and the final fracture to disk.
+    matrix selection routing, transient dataframe rendering, and the final 
+    fracture protocol to seal data to disk.
     """
     st.title("🧬 PBMC3k Dual-Ledger Annotation Engine")
     st.markdown("### Human-in-the-Loop Topology Verification & Mapping")
     
-    # 1. Load the Master Map
+    # 1. Establish the RAM Vault
+    initialize_session_vault()
+    
+    # 2. Ingest the Master Map (The Orchestrator B Output)
     master_map = load_json_ledger(DICT_B_PATH)
     if not master_map:
-        st.error(f"[CRITICAL] Master state dictionary missing at {DICT_B_PATH}.")
+        st.error(f"[CRITICAL FAILURE] Master state dictionary missing at `{DICT_B_PATH}`. Execute Phase II.")
         st.stop()
         
-    # Synchronize physical ledgers with RAM on initial load
+    # Synchronize physical ledgers with RAM on initial load only
     if not st.session_state.annotations:
         st.session_state.annotations = load_json_ledger(ANNOTATION_PATH)
     if not st.session_state.ontologies:
         st.session_state.ontologies = load_json_ledger(ONTOLOGY_PATH)
 
-    # 2. Sidebar Navigation Architecture
+    # 3. Sidebar Navigation Architecture
     st.sidebar.header("Navigation")
     macro_key = master_map.get('macro_leiden_key_training')
     micro_paths = master_map.get('projected_micro_file_path_dictionary', {})
@@ -135,28 +147,24 @@ def main() -> None:
         active_leiden = macro_key
         active_label_key = macro_key
     else:
-        selected_micro = st.sidebar.selectbox(
-            "Select Micro Topology", list(micro_paths.keys())
-        )
+        selected_micro = st.sidebar.selectbox("Select Micro Topology", list(micro_paths.keys()))
         if selected_micro:
             active_path = micro_paths[selected_micro]
             active_leiden = micro_leiden_dict.get(selected_micro)
             active_label_key = active_leiden
             
-            # Inheritance rule for Terminal States lacking a distinct micro key
+            # Absolute logical inheritance for Terminal States lacking a distinct micro key
             if active_leiden is None:
-                st.sidebar.warning("Terminal State Detected. Inheriting parent logic.")
-                active_label_key = "_".join(
-                    selected_micro.replace('_Terminal_State', '').split('_')[:-1]
-                )
+                st.sidebar.warning("Terminal State Detected. Inheriting parent topology logic.")
+                active_label_key = "_".join(selected_micro.replace('_Terminal_State', '').split('_')[:-1])
 
-    # 3. Dynamic Tensor Interrogation
+    # 4. Dynamic Tensor Interrogation & Fusion
     if active_path and active_leiden:
-        st.subheader(f"Interrogating: `{active_leiden}`")
+        st.subheader(f"Interrogating Topology: `{active_leiden}`")
         adata = load_tensor(active_path)
         
         if adata is not None:
-            # Render Extracted Thermodynamic Markers
+            # Render Extracted Thermodynamic Markers (Read-Only)
             if 'final_top_genes_per_cluster' in adata.uns:
                 df_markers = adata.uns['final_top_genes_per_cluster']
                 st.markdown("**Top Extracted Thermodynamic Markers (Wilcoxon Rank-Sum)**")
@@ -165,9 +173,11 @@ def main() -> None:
                     use_container_width=True
                 )
             else:
-                st.warning("Marker dictionary missing from tensor. Execute Phase III.")
+                st.warning("Marker dictionary missing from tensor. Execute Phase III `P05_top_markers.py`.")
 
-            # 4. The Transient DataFrame Constructor
+            # -----------------------------------------------------------------
+            # 5. The Transient DataFrame Constructor
+            # -----------------------------------------------------------------
             st.divider()
             st.markdown("### 🧬 Dual-Ledger Annotation Injection")
             
@@ -177,13 +187,13 @@ def main() -> None:
                 key=lambda x: int(x) if str(x).isdigit() else x
             )
             
-            # Ensure the structural keys exist in RAM for the active tensor
+            # Ensure the structural keys exist in the RAM vault for the active tensor
             if active_label_key not in st.session_state.annotations:
                 st.session_state.annotations[active_label_key] = {str(c): "" for c in clusters}
             if active_label_key not in st.session_state.ontologies:
                 st.session_state.ontologies[active_label_key] = {str(c): "" for c in clusters}
                 
-            # Zip the parallel ledgers into a flat 2D grid for human interaction
+            # Zipping Protocol: Fuse parallel ledgers into a flat 2D grid for human interaction
             df_state = []
             for c in clusters:
                 c_str = str(c)
@@ -198,15 +208,17 @@ def main() -> None:
                 
             df_ui = pd.DataFrame(df_state)
             
-            st.markdown("Double-click a cell to edit. Press **Enter** to lock.")
+            st.markdown("Double-click a cell to edit. Press **Enter** to lock the value into transient memory.")
             edited_df = st.data_editor(
                 df_ui, 
                 use_container_width=True, 
                 hide_index=True,
-                disabled=["Cluster ID"]  # Immutable barrier protecting the topology
+                disabled=["Cluster ID"]  # Immutable barrier protecting the core topology
             )
 
-            # 5. The Commit Protocol (The Fracture)
+            # -----------------------------------------------------------------
+            # 6. The Commit Protocol (The Fracture)
+            # -----------------------------------------------------------------
             if st.button("💾 Seal Dual Ledgers to Disk", type="primary"):
                 # Iterate through the edited 2D grid and physically sever the columns
                 for _, row in edited_df.iterrows():
@@ -214,17 +226,18 @@ def main() -> None:
                     label = row["Biological Identity"]
                     cl_id = row["Cell Ontology (CL) ID"]
                     
+                    # Route to parallel RAM states
                     st.session_state.annotations[active_label_key][c_id] = label
                     st.session_state.ontologies[active_label_key][c_id] = cl_id
                         
-                # Execute synchronized disk writes
+                # Execute absolute, synchronized disk writes
                 save_json_ledger(ANNOTATION_PATH, st.session_state.annotations)
                 save_json_ledger(ONTOLOGY_PATH, st.session_state.ontologies)
                 
-                st.success("Ledgers fractured and written to disk. Ready for Phase IV.")
+                st.success("Ledgers mathematically fractured and written to disk. Ready for Phase IV Injection.")
                 
         else:
-            st.error(f"Failed to load matrix at {active_path}")
+            st.error(f"[ERROR] Failed to load matrix at physical path: {active_path}")
 
 
 if __name__ == "__main__":
