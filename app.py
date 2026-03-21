@@ -14,6 +14,7 @@ import json
 import os
 import os.path as op
 import subprocess
+import shutil
 from pathlib import Path
 from typing import Dict, Any, Optional
 
@@ -22,6 +23,11 @@ import pandas as pd
 import scanpy as sc
 import streamlit as st
 from PIL import Image
+
+# =============================================================================
+# ABSOLUTE LAW: Page config must be the very first Streamlit command executed
+# =============================================================================
+st.set_page_config(page_title="PBMC3k Biological Observatory", layout="wide")
 # =============================================================================
 # THE WORMHOLE: Importing the Packaged Pipeline
 # =============================================================================
@@ -29,6 +35,7 @@ try:
     from src.pbmc3k_pipeline import P03_qc_filtering, P04_clustering, P05_top_markers
 except ModuleNotFoundError:
     st.error("CRITICAL FAILURE: Pipeline modules not found. Ensure 'pip install -e .' was executed.")
+    st.stop()
 # =============================================================================
 # GLOBAL THERMODYNAMIC CONSTANTS & UI CONFIGURATION
 # =============================================================================
@@ -141,7 +148,7 @@ def main() -> None:
     matrix selection routing, transient dataframe rendering, Subprocess execution,
     and the final fracture protocol to seal data to disk.
     """
-    st.title("🧬 PBMC3k Dual-Ledger Annotation Engine")
+    st.title("🧬 PBMC3k Human-in-the-Loop Pipeline")
     
     # 1. Establish the RAM Vault
     initialize_session_vault()
