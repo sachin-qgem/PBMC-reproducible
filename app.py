@@ -37,8 +37,7 @@ from src.pbmc3k_pipeline import P03_qc_filtering, P04_clustering, P05_top_marker
 # =============================================================================
 # GLOBAL THERMODYNAMIC CONSTANTS & UI CONFIGURATION
 # =============================================================================
-# Must be the absolute first Streamlit command executed
-st.set_page_config(page_title="PBMC3k Dual-Ledger Annotation", layout="wide")
+
 
 # Paths mathematically aligned to P04, P05, and P06 outputs
 DICT_B_PATH = "./data/objects/Dictionary_of_returns_from_orch_B.json"
