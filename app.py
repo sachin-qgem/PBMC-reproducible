@@ -273,170 +273,177 @@ def main() -> None:
                 )
 
     # --- TAB 3: VISUAL TELEMETRY ---
+    pipeline_state_file = "data/objects/Dictionary_of_returns_from_orch_B.json"
     with tab_telemetry:
-        st.header("📊 Visual Telemetry Vault")
-        st.markdown("Select an analytical sector to project physical evidence onto the dashboard.")
+        if not os.path.exists(pipeline_state_file):
+            st.info("📡 **Visual Telemetry Offline:** The workspace is currently sterile. Please ingest 10X matrices in the Control Room and execute Phases I through III to generate telemetry.")
+        else:
+            st.header("📊 Visual Telemetry Vault")
+            st.markdown("Select an analytical sector to project physical evidence onto the dashboard.")
 
-        # 1. THE SECTOR MAP: Absolute 1-to-1 Mapping
-        # Keys are UI Labels, Values are physical folder names
-        SECTOR_MAP = {
-            "Phase I: Quality Control (P03)": "p03_qc_filtering",
-            "Phase II: Topological Audits (P04)": "p04_clustering",
-            "Phase III: Marker Extractions (P05)": "p05_top_markers"
-        }
+            # 1. THE SECTOR MAP: Absolute 1-to-1 Mapping
+            # Keys are UI Labels, Values are physical folder names
+            SECTOR_MAP = {
+                "Phase I: Quality Control (P03)": "p03_qc_filtering",
+                "Phase II: Topological Audits (P04)": "p04_clustering",
+                "Phase III: Marker Extractions (P05)": "p05_top_markers"
+            }
 
-        # 2. THE SELECTION ENGINE
-        # This widget triggers a full script rerun on every change
-        selection = st.selectbox(
-            "Select Analytical Sector", 
-            options=list(SECTOR_MAP.keys()),
-            index=0,
-            key="telemetry_sector_selector" # Unique key forces DOM isolation
-        )
+            # 2. THE SELECTION ENGINE
+            # This widget triggers a full script rerun on every change
+            selection = st.selectbox(
+                "Select Analytical Sector", 
+                options=list(SECTOR_MAP.keys()),
+                index=0,
+                key="telemetry_sector_selector" # Unique key forces DOM isolation
+            )
 
-        # 3. PHYSICAL RESOLUTION
-        target_sub_dir = SECTOR_MAP[selection]
-        
-        # Diagnostic Telemetry (Small text to verify the path in real-time)
-        st.caption(f"Scanning Physical Path: `./results/figures/{target_sub_dir}/`")
-
-        st.divider()
-
-        # 4. THE EXECUTION
-        # Using a container ensures the previous tab content is physically purged
-        with st.container():
-            render_visual_telemetry(target_sub_dir, selection)
+            # 3. PHYSICAL RESOLUTION
+            target_sub_dir = SECTOR_MAP[selection]
             
+            # Diagnostic Telemetry (Small text to verify the path in real-time)
+            st.caption(f"Scanning Physical Path: `./results/figures/{target_sub_dir}/`")
+
+            st.divider()
+
+            # 4. THE EXECUTION
+            # Using a container ensures the previous tab content is physically purged
+            with st.container():
+                render_visual_telemetry(target_sub_dir, selection)
+            pass
     # --- TAB 2: ANNOTATION ENGINE ---
     with tab_annotate:
-        st.markdown("### Human-in-the-Loop Topology Verification & Mapping")
-        
-        # Dynamic Tensor Interrogation & Fusion
-        if active_path and active_label_key:
-            st.subheader(f"Interrogating Topology: `{active_label_key}`")
-            adata = load_tensor(active_path)
+        if not os.path.exists(pipeline_state_file):
+            st.info("✍️ **Annotation Engine Offline:** Awaiting structural topology. Execute the pipeline in the Control Room to unlock biological annotation.")
+        else:
+            st.markdown("### Human-in-the-Loop Topology Verification & Mapping")
             
-            if adata is not None:
-                # Render Extracted Thermodynamic Markers (Read-Only)
-                if 'final_top_genes_per_cluster' in adata.uns:
-                    df_markers = adata.uns['final_top_genes_per_cluster']
-                    st.markdown("**Top Extracted Thermodynamic Markers (Wilcoxon Rank-Sum)**")
-                    st.dataframe(
-                        df_markers[['group', 'names', 'pvals_adj', 'logfoldchanges', 'violin_delta']], 
-                        use_container_width=True
-                    )
-                else:
-                    # Check if the void is due to mathematical purity (Terminal State)
-                    if "Terminal_State" in active_path:
-                        st.info(
-                            "**Terminal State Confirmed.**\n"
-                            "This micro-topology is mathematically homogeneous. Differential marker "
-                            "extraction requires at least two sub-clusters to calculate variance. "
-                            "Please refer to the parent Macro topology (`macro_leiden_2`) to view the "
-                            "defining thermodynamic markers for this lineage."
+            # Dynamic Tensor Interrogation & Fusion
+            if active_path and active_label_key:
+                st.subheader(f"Interrogating Topology: `{active_label_key}`")
+                adata = load_tensor(active_path)
+                
+                if adata is not None:
+                    # Render Extracted Thermodynamic Markers (Read-Only)
+                    if 'final_top_genes_per_cluster' in adata.uns:
+                        df_markers = adata.uns['final_top_genes_per_cluster']
+                        st.markdown("**Top Extracted Thermodynamic Markers (Wilcoxon Rank-Sum)**")
+                        st.dataframe(
+                            df_markers[['group', 'names', 'pvals_adj', 'logfoldchanges', 'violin_delta']], 
+                            use_container_width=True
                         )
                     else:
-                        st.warning("Marker dictionary missing from active tensor. Execute Phase III `P05_top_markers.py`.")
-
-                # -----------------------------------------------------------------
-                # 5. The Transient DataFrame Constructor
-                # -----------------------------------------------------------------
-                st.divider()
-                st.markdown("### 🧬 Dual-Ledger Annotation Injection")
-                
-                # Extract rigid mathematical clusters from the physical matrix
-                cluster_col = active_leiden if active_leiden else active_label_key
-                
-                if cluster_col in adata.obs.columns:
-                    clusters = sorted(
-                        adata.obs[cluster_col].dropna().unique().tolist(), 
-                        key=lambda x: int(x) if str(x).isdigit() else x
-                    )
-                    
-                    # Ensure the structural keys exist in the RAM vault
-                    if active_label_key not in st.session_state.annotations:
-                        st.session_state.annotations[active_label_key] = {str(c): "" for c in clusters}
-                    if active_label_key not in st.session_state.ontologies:
-                        st.session_state.ontologies[active_label_key] = {str(c): "" for c in clusters}
-                        
-                    # Zipping Protocol: Fuse parallel ledgers into a flat 2D grid
-                    df_state = []
-                    for c in clusters:
-                        c_str = str(c)
-                        current_label = st.session_state.annotations[active_label_key].get(c_str, "")
-                        current_cl = st.session_state.ontologies[active_label_key].get(c_str, "")
-                        
-                        df_state.append({
-                            "Cluster ID": c_str,
-                            "Biological Identity": current_label,
-                            "Cell Ontology (CL) ID": current_cl
-                        })
-                        
-                    df_ui = pd.DataFrame(df_state)
-                    
-                    st.markdown("Double-click a cell to edit. Press **Enter** to lock the value into transient memory.")
-                    edited_df = st.data_editor(
-                        df_ui, 
-                        use_container_width=True, 
-                        hide_index=True,
-                        disabled=["Cluster ID"]  # Immutable barrier protecting the core topology
-                    )
+                        # Check if the void is due to mathematical purity (Terminal State)
+                        if "Terminal_State" in active_path:
+                            st.info(
+                                "**Terminal State Confirmed.**\n"
+                                "This micro-topology is mathematically homogeneous. Differential marker "
+                                "extraction requires at least two sub-clusters to calculate variance. "
+                                "Please refer to the parent Macro topology (`macro_leiden_2`) to view the "
+                                "defining thermodynamic markers for this lineage."
+                            )
+                        else:
+                            st.warning("Marker dictionary missing from active tensor. Execute Phase III `P05_top_markers.py`.")
 
                     # -----------------------------------------------------------------
-                    # 6. The Commit Protocol (The Fracture)
-                    # -----------------------------------------------------------------
-                    if st.button("💾 Seal Dual Ledgers to Disk", type="primary"):
-                        for _, row in edited_df.iterrows():
-                            c_id = row["Cluster ID"]
-                            label = row["Biological Identity"]
-                            cl_id = row["Cell Ontology (CL) ID"]
-                            
-                            st.session_state.annotations[active_label_key][c_id] = label
-                            st.session_state.ontologies[active_label_key][c_id] = cl_id
-                                
-                        save_json_ledger(ANNOTATION_PATH, st.session_state.annotations)
-                        save_json_ledger(ONTOLOGY_PATH, st.session_state.ontologies)
-                        
-                        st.success("Ledgers mathematically fractured and written to disk. Ready for Phase IV Injection.")
-
-                    # -----------------------------------------------------------------
-                    # 7. The Recombination Engine (Executing P06)
+                    # 5. The Transient DataFrame Constructor
                     # -----------------------------------------------------------------
                     st.divider()
-                    st.markdown("### ⚙️ Phase IV: Artifact Recombination")
-                    st.markdown("Execute this strictly *after* you have completely populated and sealed the ledgers above.")
+                    st.markdown("### 🧬 Dual-Ledger Annotation Injection")
                     
-                    if st.button("🚀 Execute P06 & Generate ML Artifact", type="secondary"):
-                        with st.spinner("Injecting topologies and recombining global matrix..."):
-                            # Command the Linux server to run your P06 script
-                            result = subprocess.run(
-                                ["python", "src/02_analysis_scripts/P06_annotation.py"], 
-                                capture_output=True, 
-                                text=True
-                            )
+                    # Extract rigid mathematical clusters from the physical matrix
+                    cluster_col = active_leiden if active_leiden else active_label_key
+                    
+                    if cluster_col in adata.obs.columns:
+                        clusters = sorted(
+                            adata.obs[cluster_col].dropna().unique().tolist(), 
+                            key=lambda x: int(x) if str(x).isdigit() else x
+                        )
+                        
+                        # Ensure the structural keys exist in the RAM vault
+                        if active_label_key not in st.session_state.annotations:
+                            st.session_state.annotations[active_label_key] = {str(c): "" for c in clusters}
+                        if active_label_key not in st.session_state.ontologies:
+                            st.session_state.ontologies[active_label_key] = {str(c): "" for c in clusters}
                             
-                            if result.returncode == 0:
-                                st.success("Matrix successfully recombined and sealed!")
-                                with st.expander("View P06 Execution Logs"):
-                                    st.code(result.stdout)
-                                    
-                                # Locate the generated artifact to offer a download
-                                ml_ready_path = "./data/objects/pbmc3k_qc_ML_Ready.h5ad"
-                                if op.exists(ml_ready_path):
-                                    with open(ml_ready_path, "rb") as file:
-                                        st.download_button(
-                                            label="⬇️ Download Final ML-Ready Matrix",
-                                            data=file,
-                                            file_name="pbmc3k_ML_Ready.h5ad",
-                                            mime="application/octet-stream"
-                                        )
-                            else:
-                                st.error("P06 Execution Failed. Review the thermodynamic fracture logs below.")
-                                st.code(result.stderr)
-                else:
-                    st.error(f"[ERROR] Required observation column '{cluster_col}' missing from matrix.")
-            else:
-                st.error(f"[ERROR] Failed to load matrix at physical path: {active_path}")
+                        # Zipping Protocol: Fuse parallel ledgers into a flat 2D grid
+                        df_state = []
+                        for c in clusters:
+                            c_str = str(c)
+                            current_label = st.session_state.annotations[active_label_key].get(c_str, "")
+                            current_cl = st.session_state.ontologies[active_label_key].get(c_str, "")
+                            
+                            df_state.append({
+                                "Cluster ID": c_str,
+                                "Biological Identity": current_label,
+                                "Cell Ontology (CL) ID": current_cl
+                            })
+                            
+                        df_ui = pd.DataFrame(df_state)
+                        
+                        st.markdown("Double-click a cell to edit. Press **Enter** to lock the value into transient memory.")
+                        edited_df = st.data_editor(
+                            df_ui, 
+                            use_container_width=True, 
+                            hide_index=True,
+                            disabled=["Cluster ID"]  # Immutable barrier protecting the core topology
+                        )
 
+                        # -----------------------------------------------------------------
+                        # 6. The Commit Protocol (The Fracture)
+                        # -----------------------------------------------------------------
+                        if st.button("💾 Seal Dual Ledgers to Disk", type="primary"):
+                            for _, row in edited_df.iterrows():
+                                c_id = row["Cluster ID"]
+                                label = row["Biological Identity"]
+                                cl_id = row["Cell Ontology (CL) ID"]
+                                
+                                st.session_state.annotations[active_label_key][c_id] = label
+                                st.session_state.ontologies[active_label_key][c_id] = cl_id
+                                    
+                            save_json_ledger(ANNOTATION_PATH, st.session_state.annotations)
+                            save_json_ledger(ONTOLOGY_PATH, st.session_state.ontologies)
+                            
+                            st.success("Ledgers mathematically fractured and written to disk. Ready for Phase IV Injection.")
+
+                        # -----------------------------------------------------------------
+                        # 7. The Recombination Engine (Executing P06)
+                        # -----------------------------------------------------------------
+                        st.divider()
+                        st.markdown("### ⚙️ Phase IV: Artifact Recombination")
+                        st.markdown("Execute this strictly *after* you have completely populated and sealed the ledgers above.")
+                        
+                        if st.button("🚀 Execute P06 & Generate ML Artifact", type="secondary"):
+                            with st.spinner("Injecting topologies and recombining global matrix..."):
+                                # Command the Linux server to run your P06 script
+                                result = subprocess.run(
+                                    ["python", "src/02_analysis_scripts/P06_annotation.py"], 
+                                    capture_output=True, 
+                                    text=True
+                                )
+                                
+                                if result.returncode == 0:
+                                    st.success("Matrix successfully recombined and sealed!")
+                                    with st.expander("View P06 Execution Logs"):
+                                        st.code(result.stdout)
+                                        
+                                    # Locate the generated artifact to offer a download
+                                    ml_ready_path = "./data/objects/pbmc3k_qc_ML_Ready.h5ad"
+                                    if op.exists(ml_ready_path):
+                                        with open(ml_ready_path, "rb") as file:
+                                            st.download_button(
+                                                label="⬇️ Download Final ML-Ready Matrix",
+                                                data=file,
+                                                file_name="pbmc3k_ML_Ready.h5ad",
+                                                mime="application/octet-stream"
+                                            )
+                                else:
+                                    st.error("P06 Execution Failed. Review the thermodynamic fracture logs below.")
+                                    st.code(result.stderr)
+                    else:
+                        st.error(f"[ERROR] Required observation column '{cluster_col}' missing from matrix.")
+                else:
+                    st.error(f"[ERROR] Failed to load matrix at physical path: {active_path}")
+            pass
 if __name__ == "__main__":
     main()
