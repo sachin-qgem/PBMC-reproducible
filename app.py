@@ -32,7 +32,7 @@ st.set_page_config(page_title="PBMC3k Biological Observatory", layout="wide")
 # THE WORMHOLE: Importing the Packaged Pipeline
 # =============================================================================
 
-from src.pbmc3k_pipeline import P03_qc_filtering, P04_clustering, P05_top_markers
+from src.pbmc3k_pipeline import P03_qc_filtering, P04_clustering, P05_top_markers, P06_annotation
 
 # =============================================================================
 # GLOBAL THERMODYNAMIC CONSTANTS & UI CONFIGURATION
