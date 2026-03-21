@@ -22,7 +22,13 @@ import pandas as pd
 import scanpy as sc
 import streamlit as st
 from PIL import Image
-
+# =============================================================================
+# THE WORMHOLE: Importing the Packaged Pipeline
+# =============================================================================
+try:
+    from src.pbmc3k_pipeline import P03_qc_filtering, P04_clustering, P05_top_markers
+except ModuleNotFoundError:
+    st.error("CRITICAL FAILURE: Pipeline modules not found. Ensure 'pip install -e .' was executed.")
 # =============================================================================
 # GLOBAL THERMODYNAMIC CONSTANTS & UI CONFIGURATION
 # =============================================================================
@@ -184,9 +190,85 @@ def main() -> None:
                 active_label_key = '_'.join(parts[:-1])
 
     # 4. The Tab Architecture
-    tab_annotate, tab_telemetry = st.tabs(["🧬 Annotation Engine", "📊 Visual Telemetry"])
+    tab_control_room,tab_annotate, tab_telemetry = st.tabs(["🎛️ Control Room (Execution)","🧬 Annotation Engine", "📊 Visual Telemetry"])
 
-    # --- TAB 2: VISUAL TELEMETRY ---
+    # =========================================================================
+    # TAB 1: THE CONTROL ROOM
+    # =========================================================================
+    with tab_control_room:
+        st.markdown("### 1. The Entropy Purge")
+        st.write("Wipe existing tensors and figures to prepare the physical container for new data ingestion.")
+        
+        if st.button("Execute 'make clean' / Purge Workspace", type="primary"):
+            directories_to_clean = [
+                "data/raw/pbmc3k_filtered_gene_bc_matrices/hg19", 
+                "data/objects", 
+                "results/figures"
+            ]
+            for directory in directories_to_clean:
+                if os.path.exists(directory):
+                    shutil.rmtree(directory)
+                os.makedirs(directory, exist_ok=True)
+            st.success("Workspace purged. 5-Sigma sterile environment achieved.")
+
+        st.divider()
+
+        st.markdown("### 2. The Ingestion Protocol")
+        st.write("Upload the 3 standard 10X Genomics files: `matrix.mtx`, `barcodes.tsv`, `genes.tsv`")
+        
+        uploaded_files = st.file_uploader("Drop 10X files here", accept_multiple_files=True)
+        
+        if uploaded_files:
+            if st.button("Anchor Matter to Container Disk"):
+                target_dir = "data/raw/pbmc3k_filtered_gene_bc_matrices/hg19"
+                os.makedirs(target_dir, exist_ok=True)
+                for f in uploaded_files:
+                    file_path = os.path.join(target_dir, f.name)
+                    with open(file_path, "wb") as disk_file:
+                        disk_file.write(f.getbuffer())
+                st.success(f"Successfully anchored {len(uploaded_files)} files to {target_dir}")
+
+        st.divider()
+
+        st.markdown("### 3. The Execution Engine")
+        st.write("Trigger the analytical modules. WARNING: Observe the 16GB RAM boundary.")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            if st.button("Run Phase I (QC & Filter)"):
+                with st.spinner("Executing 5-MAD thermodynamic purge..."):
+                    P03_qc_filtering.main()
+                st.success("Phase I Complete: pbmc3k_qc.h5ad anchored.")
+                
+        with col2:
+            if st.button("Run Phase II (Clustering)"):
+                with st.spinner("Computing Neighborhood Graphs & UMAPs..."):
+                    P04_clustering.main()
+                st.success("Phase II Complete: Topology established.")
+                
+        with col3:
+            if st.button("Run Phase III (Markers)"):
+                with st.spinner("Extracting Biological Markers..."):
+                    P05_top_markers.main()
+                st.success("Phase III Complete: Telemetry Ready.")
+
+        st.divider()
+
+        st.markdown("### 4. Artifact Extraction")
+        st.write("Extract intermediate tensors before container hibernation.")
+        
+        qc_path = "data/objects/pbmc3k_qc.h5ad"
+        if os.path.exists(qc_path):
+            with open(qc_path, "rb") as f:
+                st.download_button(
+                    label="Download P03/P04 State (pbmc3k_qc.h5ad)",
+                    data=f,
+                    file_name="pbmc3k_qc_custom.h5ad",
+                    mime="application/octet-stream"
+                )
+
+    # --- TAB 3: VISUAL TELEMETRY ---
     with tab_telemetry:
         st.header("📊 Visual Telemetry Vault")
         st.markdown("Select an analytical sector to project physical evidence onto the dashboard.")
@@ -221,7 +303,7 @@ def main() -> None:
         with st.container():
             render_visual_telemetry(target_sub_dir, selection)
             
-    # --- TAB 1: ANNOTATION ENGINE ---
+    # --- TAB 2: ANNOTATION ENGINE ---
     with tab_annotate:
         st.markdown("### Human-in-the-Loop Topology Verification & Mapping")
         

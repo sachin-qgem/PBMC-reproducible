@@ -846,7 +846,7 @@ def orchestrator_B(dict_A: dict) -> dict:
 
 
 
-if __name__ == '__main__':
+def main():
     # Relative paths
     h5ad_path = './data/objects/pbmc3k_qc.h5ad'
     save_folder_path = './data/objects'
@@ -865,4 +865,5 @@ if __name__ == '__main__':
         
     print("\n[SUCCESS] PHASE II COMPLETE. READY FOR PHASE III.")
 
-
+if __name__ == '__main__':
+    main()

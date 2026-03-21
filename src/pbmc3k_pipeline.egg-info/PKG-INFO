@@ -2,7 +2,7 @@ Metadata-Version: 2.4
 Name: pbmc3k_pipeline
 Version: 1.0.0
 Summary: A reproducible, human-in-the-loop pipeline for single-cell PBMC3k analysis.
-Author-email: Sachin <your.email@example.com>
+Author-email: Sachin <qgemai@proton.me>
 Requires-Python: >=3.11
 Description-Content-Type: text/markdown
 License-File: LICENSE
@@ -13,6 +13,7 @@ Requires-Dist: numpy==1.26.4
 Requires-Dist: streamlit==1.42.0
 Requires-Dist: scikit-learn
 Requires-Dist: pillow
+Requires-Dist: celltypist
 Dynamic: license-file
 
 ---

@@ -261,7 +261,7 @@ def orch_qc_filtering(
 
 
 
-if __name__ == "__main__":
+def main():
     # Define absolute topological paths
     mtx_path = "data/raw/pbmc3k_filtered_gene_bc_matrices/hg19"
     pbmc3k_qc_h5ad_path = "data/objects/pbmc3k_qc.h5ad"
@@ -277,3 +277,6 @@ if __name__ == "__main__":
     )
     
     print("\nPHASE I COMPLETE. MATRIX READY FOR FRACTURE.")
+
+if __name__ == "__main__":
+    main()

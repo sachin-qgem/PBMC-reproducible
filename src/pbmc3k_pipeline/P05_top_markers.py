@@ -457,7 +457,7 @@ def orc_project(
 
 
 
-if __name__ == '__main__':
+def main():
     # Initialize CellTypist environment
     
     ct.models.download_models(force_update=True, model=['Immune_All_Low.pkl', 'Immune_All_High.pkl'])
@@ -475,3 +475,6 @@ if __name__ == '__main__':
     )
     
     print("\n[SUCCESS] PHASE III COMPLETE. AWAITING HUMAN ANNOTATION.")
+
+if __name__ == '__main__':
+    main()
