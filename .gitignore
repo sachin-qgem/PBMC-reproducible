@@ -15,12 +15,13 @@ notebooks/
 # --- Data & Artifacts (CRITICAL) ---
 # We do not push heavy matter to the repository.
 data/celltypist_models
-data/objects
 data/raw/pbmc3k_filtered_gene_bc_matrices/hg19
 data/raw/pbmc3k_raw_gene_bc_matrices/hg19
 data/raw/pbmc3k_molecule_info.h5
 data/reconstructed_matrices_final
 cache/
+# ALLOW the objects required for the UI and Recombination
+!data/objects/
 # --- OS Noise ---
 .DS_Store
 Thumbs.db

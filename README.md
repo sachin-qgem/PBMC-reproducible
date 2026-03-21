@@ -71,6 +71,7 @@ make pipeline
 ├── .conda/                             # Isolated thermodynamic environment (Python runtime)
 ├── cache/                              # Temporary execution buffers
 │
+├── app.py                              <-- The Entry Point (Interface)
 ├── data/                               # The Data Lake
 │   ├── celltypist_models/              # Automated reference-based annotation models
 │   ├── objects/                        # Checkpointed AnnData (.h5ad) state vectors
