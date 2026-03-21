@@ -28,7 +28,7 @@ help:
 # --- Environment Genesis ---
 setup:
 	@echo "\n[INIT] Forging isolated thermodynamic environment..."
-	conda env create --prefix ./.conda -f stable_environment.yml
+	conda env create --prefix ./.conda -f latest_python_stable_environment_no_streamlit.yml
 	@echo "\n[SUCCESS] Environment forged. Run 'conda activate ./.conda' before executing the pipeline."
 
 # --- Pipeline Sequence ---
