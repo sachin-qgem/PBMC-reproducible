@@ -1,0 +1,42 @@
+# =============================================================================
+# THE FORGE (Build System)
+# Tells the machine which engine to use to construct the package.
+# We use 'setuptools', the most stable and ubiquitous forge.
+# =============================================================================
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+# =============================================================================
+# THE LEDGER (Project Metadata)
+# The physical identity of your code.
+# =============================================================================
+[project]
+name = "pbmc3k_pipeline"
+version = "1.0.0"
+description = "A reproducible, human-in-the-loop pipeline for single-cell PBMC3k analysis."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+    { name = "Sachin", email = "your.email@example.com" }
+]
+
+# The fundamental dependencies required for this package to exist.
+# Notice we mirror your requirements.txt here to ensure total parity.
+dependencies = [
+    "scanpy==1.11.5",
+    "anndata==0.12.10",
+    "pandas==2.3.3",
+    "numpy==1.26.4",
+    "streamlit==1.42.0",
+    "scikit-learn",
+    "pillow"
+]
+
+# =============================================================================
+# TERMINAL INVOCATION (Scripts)
+# This converts your Python functions into global terminal commands.
+# =============================================================================
+[project.scripts]
+# Format: terminal-command-name = "module.path.to.file:function_name"
+pbmc3k-ui = "app:main"

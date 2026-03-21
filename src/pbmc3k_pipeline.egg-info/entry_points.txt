@@ -1,0 +1,2 @@
+[console_scripts]
+pbmc3k-ui = app:main
