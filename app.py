@@ -31,11 +31,9 @@ st.set_page_config(page_title="PBMC3k Biological Observatory", layout="wide")
 # =============================================================================
 # THE WORMHOLE: Importing the Packaged Pipeline
 # =============================================================================
-try:
-    from src.pbmc3k_pipeline import P03_qc_filtering, P04_clustering, P05_top_markers
-except ModuleNotFoundError:
-    st.error("CRITICAL FAILURE: Pipeline modules not found. Ensure 'pip install -e .' was executed.")
-    st.stop()
+
+from src.pbmc3k_pipeline import P03_qc_filtering, P04_clustering, P05_top_markers
+
 # =============================================================================
 # GLOBAL THERMODYNAMIC CONSTANTS & UI CONFIGURATION
 # =============================================================================
