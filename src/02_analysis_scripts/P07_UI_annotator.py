@@ -217,7 +217,17 @@ def main() -> None:
                         use_container_width=True
                     )
                 else:
-                    st.warning("Marker dictionary missing from tensor. Execute Phase III `P05_top_markers.py`.")
+                    # Check if the void is due to mathematical purity (Terminal State)
+                    if "Terminal_State" in active_path:
+                        st.info(
+                            "**Terminal State Confirmed.**\n"
+                            "This micro-topology is mathematically homogeneous. Differential marker "
+                            "extraction requires at least two sub-clusters to calculate variance. "
+                            "Please refer to the parent Macro topology (`macro_leiden_2`) to view the "
+                            "defining thermodynamic markers for this lineage."
+                        )
+                    else:
+                        st.warning("Marker dictionary missing from active tensor. Execute Phase III `P05_top_markers.py`.")
 
                 # -----------------------------------------------------------------
                 # 5. The Transient DataFrame Constructor
