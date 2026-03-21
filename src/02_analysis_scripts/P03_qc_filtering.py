@@ -146,7 +146,7 @@ def audit_distribution(
         jitter=0.4, 
         multi_panel=True,
         show=False, 
-        save=f"_{stagename}.png"
+        save=f"_{stagename}.svg"
     )
     sc.pl.scatter(
         adata, 
@@ -155,7 +155,7 @@ def audit_distribution(
         color=scatter_color,
         size=5,
         show=False,
-        save=f"_{stagename}.png"
+        save=f"_{stagename}.svg"
     )
 
 

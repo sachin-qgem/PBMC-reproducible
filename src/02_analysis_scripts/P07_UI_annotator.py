@@ -113,7 +113,7 @@ def render_visual_telemetry(sub_dir: str, title: str) -> None:
         return
         
     # Dynamically extract absolute paths of all PNGs in the target sector
-    png_files = list(Path(target_dir).rglob("*.png"))
+    png_files = list(Path(target_dir).rglob("*.svg"))
     
     if not png_files:
         st.info(f"No telemetry artifacts found in {sub_dir}.")

@@ -114,7 +114,7 @@ def rank_gene_groups_wilcoxon(
 
     print("[INFO] Rendering dendrogram, dotplot, and matrixplot evidence...")
     sc.tl.dendrogram(adata, groupby=leiden_key)
-    safe_fig_name = f"_{leiden_key}_top_genes.png"
+    safe_fig_name = f"_{leiden_key}_top_genes.svg"
     
     sc.pl.dotplot(
         adata, var_names=grouped_top_genes, groupby=leiden_key, standard_scale='var',
@@ -240,7 +240,7 @@ def execute_absence_cross_validation(
         if valid_genes:
             safe_contamination_dict[source] = valid_genes
             
-    safe_fig_name = f"_absence_audit_macro_{target_macro_id}.png"
+    safe_fig_name = f"_absence_audit_macro_{target_macro_id}.svg"
     
     sc.pl.matrixplot(
         adata_target, var_names=safe_contamination_dict, groupby=current_leiden_key,
@@ -319,7 +319,7 @@ def wide_span_plots(
         curated_markers = json.load(file)
         
     valid_genes = [gene for gene in curated_markers if gene in available_genes]
-    safe_fig_name = f"_curated_genes_audit_widespan_{groupby_key}.png"
+    safe_fig_name = f"_curated_genes_audit_widespan_{groupby_key}.svg"
     
     if len(valid_genes) > 0:
         sc.pl.matrixplot(

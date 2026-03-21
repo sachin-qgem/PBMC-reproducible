@@ -98,7 +98,7 @@ def cell_cycle_check(
         adata, s_genes=s_genes, g2m_genes=g2m_genes, layer='log1p_norm'
     )
     
-    save_path = f"{file_save_key}_cell_cycle.png"
+    save_path = f"{file_save_key}_cell_cycle.svg"
     sc.pl.umap(
         adata, 
         color=['S_score', 'G2M_score', 'leiden'],
@@ -219,7 +219,7 @@ def knn_umap_leiden(
                 components ='all',size= 50.0,color_map = 'Blues',show=False,
                 title = 'Training Manifold',legend_loc = 'on data',
                 legend_fontsize = 'x-small',legend_fontweight = 'bold',
-                legend_fontoutline = 3,save=f".png")
+                legend_fontoutline = 3,save=f".svg")
         
         print(f"\n[AUDIT] Subsampling stability evaluation for '{key_name}'...")
         n_iterations = 20
@@ -350,7 +350,7 @@ def stability_audit(training_filepath: str, key_for_saving_images: str,res_start
             marker='x', ax=ax2, label='Stability (ARI)'
         )
         plt.title("Parameter Stability: Cluster Count vs. ARI")
-        plt.savefig(f"{plt_fig_dir}/{key_for_saving_images}_stability_resolution_sweep.png")
+        plt.savefig(f"{plt_fig_dir}/{key_for_saving_images}_stability_resolution_sweep.svg")
         plt.close()
 
         # Automated Plateau Extraction Logic
@@ -473,7 +473,7 @@ def stability_audit(training_filepath: str, key_for_saving_images: str,res_start
         print("  -> Generating sanity dotplot...")
         sc.pl.dotplot(
             adata_A, valid_markers, groupby=f'leiden_res_{ref_res}', 
-            standard_scale='var', show=False, save= f"_{key_for_saving_images}_stability_biological_sanity.png"
+            standard_scale='var', show=False, save= f"_{key_for_saving_images}_stability_biological_sanity.svg"
         )
         
         del adata_A_test_sub
@@ -567,7 +567,7 @@ def npr_hvg_pca_recal(filepath: str, keys: str) -> None:
             adata, n_comps=100, zero_center=True, svd_solver='arpack', mask_var='highly_variable'
         )
         
-        sc.pl.pca_variance_ratio(adata, n_pcs=100, save=f"_{keys}_.png", show=False)
+        sc.pl.pca_variance_ratio(adata, n_pcs=100, save=f"_{keys}_.svg", show=False)
         adata.write_h5ad(filepath)
         
     del adata
@@ -660,7 +660,7 @@ def cast_projectable_data_on_training_data(
             handle.set_alpha(1.0)
             
         plt.tight_layout()
-        plt.savefig(f'{plt_fig_dir}/{leiden_key_training}_Projection_Overlap.png')
+        plt.savefig(f'{plt_fig_dir}/{leiden_key_training}_Projection_Overlap.svg')
         
     except KeyError:
         print("[WARNING] 'X_pca' missing. Visual projection diagnostic bypassed.")
