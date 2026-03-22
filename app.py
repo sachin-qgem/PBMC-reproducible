@@ -9,12 +9,13 @@ and features a Visual Telemetry scanner to project physical pipeline artifacts
 the Phase IV Recombination script entirely in the background.
 """
 
-import gc
+
 import json
 import os
+import re
 import os.path as op
-import subprocess
 import shutil
+import base64
 from pathlib import Path
 from typing import Dict, Any, Optional
 
@@ -22,7 +23,6 @@ import anndata as ad
 import pandas as pd
 import scanpy as sc
 import streamlit as st
-from PIL import Image
 
 # =============================================================================
 # ABSOLUTE LAW: Page config must be the very first Streamlit command executed
@@ -131,15 +131,12 @@ def render_visual_telemetry(sub_dir: str, title: str) -> None:
                 # 1. Read the raw SVG XML
                 with open(img_path, "r", encoding="utf-8") as f:
                     svg_code = f.read()
-                
-                # 2. Wrap in a CSS-controlled Container
-                # max-width: 100% ensures it stays inside the column
-                # display: block + margin: auto ensures centering
-                styled_svg = f"""
-                <div style="display: block; margin-left: auto; margin-right: auto; width: 100%; max-width: 400px;">
-                    {svg_code}
-                </div>
-                """
+                svg_code = re.sub(r'width="[^"]+"', 'width="100%"', svg_code, count=1)
+                svg_code = re.sub(r'height="[^"]+"', 'height="auto"', svg_code, count=1)
+                b64_svg = base64.b64encode(svg_code.encode("utf-8")).decode("utf-8")
+                img_src = f"data:image/svg+xml;base64,{b64_svg}"
+                css_container = "display: flex; justify-content: center; align-items: center; overflow: hidden; border: 1px solid rgba(128,128,128,0.2); border-radius: 5px; padding: 10px; margin-bottom: 10px; background-color: white;"
+                styled_svg = f"<div style='{css_container}'><img src='{img_src}' style='width: 100%; height: auto;' alt='{img_path.name}'></div>"
                 st.markdown(styled_svg, unsafe_allow_html=True)
                 st.caption(f"📍 {img_path.name}")
             else:

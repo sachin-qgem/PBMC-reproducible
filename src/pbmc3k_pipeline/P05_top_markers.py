@@ -412,7 +412,7 @@ def orc_project(
             
     micro_paths_dict = dict_b.get(micro_paths_key, {})
     micro_leiden_dict = dict_b.get(micro_leiden_key, {})
-    
+    print("\n[ORCHESTRATOR] Initiating Phase 1: Global State Generation...")
     for leiden_dict_key, file_path in micro_paths_dict.items():
         print(f"\n[MICRO] Scanning topology: {leiden_dict_key}")
         
@@ -437,10 +437,42 @@ def orc_project(
         )
         auto_ref_mapping(file_path, micro_model, active_leiden_col)
         
+    print("\n[ORCHESTRATOR] Initiating Phase 2: Global Forensic Cross-Validation...")
+    for leiden_dict_key, file_path in micro_paths_dict.items():
+        print(f"\n [MICRO AUDIT] Executing visual proofs for: {leiden_dict_key}")
+        
+        if not op.exists(file_path):
+            continue  # Already logged in Phase 1
+            
+        active_leiden_col = micro_leiden_dict.get(leiden_dict_key)
+        
+        # If it was a terminal state with no active leiden col, we still want to 
+        # run the wide_span_plots on the inherited parent key, but absence audit requires 
+        # a target macro ID.
+        if active_leiden_col is None:
+             clean_key = leiden_dict_key.replace('_Terminal_State', '')
+             parts = clean_key.split('_')
+             parent_dict_key = '_'.join(parts[:-1])
+             target_id = str(leiden_dict_key).split('_')[-2] # Fetch the number before Terminal_State
+             
+             execute_absence_cross_validation(
+                 target_macro_id=target_id, 
+                 current_micro_path=file_path,
+                 current_leiden_key=parent_dict_key, 
+                 macro_path=macro_path,
+                 micro_paths_dict=micro_paths_dict
+             )
+             wide_span_plots(file_path, parent_dict_key, curated_marker_list_path)
+             continue
+
+        # Standard Execution for active clusters
         target_id = str(leiden_dict_key).split('_')[-1]
+        
         execute_absence_cross_validation(
-            target_macro_id=target_id, current_micro_path=file_path, 
-            current_leiden_key=active_leiden_col, macro_path=macro_path, 
+            target_macro_id=target_id, 
+            current_micro_path=file_path,
+            current_leiden_key=active_leiden_col, 
+            macro_path=macro_path,
             micro_paths_dict=micro_paths_dict
         )
         wide_span_plots(file_path, active_leiden_col, curated_marker_list_path)
