@@ -152,46 +152,47 @@ def main() -> None:
     
     # 2. Ingest the Master Map (The Orchestrator B Output)
     master_map = load_json_ledger(DICT_B_PATH)
-    if not master_map:
-        st.error(f"[CRITICAL FAILURE] Master state dictionary missing at `{DICT_B_PATH}`. Execute Phase II.")
-        st.stop()
+    
         
     # Synchronize physical ledgers with RAM on initial load only
-    if not st.session_state.annotations:
-        st.session_state.annotations = load_json_ledger(ANNOTATION_PATH)
-    if not st.session_state.ontologies:
-        st.session_state.ontologies = load_json_ledger(ONTOLOGY_PATH)
+    if master_map:
+        if not st.session_state.annotations:
+            st.session_state.annotations = load_json_ledger(ANNOTATION_PATH)
+        if not st.session_state.ontologies:
+            st.session_state.ontologies = load_json_ledger(ONTOLOGY_PATH)
 
     # 3. Sidebar Navigation Architecture
     st.sidebar.header("Navigation")
-    macro_key = master_map.get('macro_leiden_key_training')
-    micro_paths = master_map.get('projected_micro_file_path_dictionary', {})
-    micro_leiden_dict = master_map.get('projected_micro_leiden_key_dictionary', {})
-    
-    view_mode = st.sidebar.radio("Topology Level", ["Macro Level", "Micro Level"])
-    
     active_path = None
     active_leiden = None
     active_label_key = None
+    if master_map:
+        macro_key = master_map.get('macro_leiden_key_training')
+        micro_paths = master_map.get('projected_micro_file_path_dictionary', {})
+        micro_leiden_dict = master_map.get('projected_micro_leiden_key_dictionary', {})
+        
+        view_mode = st.sidebar.radio("Topology Level", ["Macro Level", "Micro Level"])
     
-    if view_mode == "Macro Level":
-        active_path = master_map.get('macro_adata_project_file_path')
-        active_leiden = macro_key
-        active_label_key = macro_key
+        if view_mode == "Macro Level":
+            active_path = master_map.get('macro_adata_project_file_path')
+            active_leiden = macro_key
+            active_label_key = macro_key
+        else:
+            selected_micro = st.sidebar.selectbox("Select Micro Topology", list(micro_paths.keys()))
+            if selected_micro:
+                active_path = micro_paths[selected_micro]
+                active_leiden = micro_leiden_dict.get(selected_micro)
+                active_label_key = active_leiden
+                
+                # Absolute logical inheritance for Terminal States
+                # Matches the exact string manipulation physics established in P06
+                if active_leiden is None:
+                    st.sidebar.warning("Terminal State Detected. Inheriting parent topology logic.")
+                    clean_key = selected_micro.replace('_Terminal_State', '')
+                    parts = clean_key.split('_')
+                    active_label_key = '_'.join(parts[:-1])
     else:
-        selected_micro = st.sidebar.selectbox("Select Micro Topology", list(micro_paths.keys()))
-        if selected_micro:
-            active_path = micro_paths[selected_micro]
-            active_leiden = micro_leiden_dict.get(selected_micro)
-            active_label_key = active_leiden
-            
-            # Absolute logical inheritance for Terminal States
-            # Matches the exact string manipulation physics established in P06
-            if active_leiden is None:
-                st.sidebar.warning("Terminal State Detected. Inheriting parent topology logic.")
-                clean_key = selected_micro.replace('_Terminal_State', '')
-                parts = clean_key.split('_')
-                active_label_key = '_'.join(parts[:-1])
+        st.sidebar.info("Workspace sterile. Awaiting ingestion from Control Room.")
 
     # 4. The Tab Architecture
     tab_control_room,tab_annotate, tab_telemetry = st.tabs(["🎛️ Control Room (Execution)","🧬 Annotation Engine", "📊 Visual Telemetry"])
@@ -275,22 +276,18 @@ def main() -> None:
     # --- TAB 3: VISUAL TELEMETRY ---
     pipeline_state_file = "data/objects/Dictionary_of_returns_from_orch_B.json"
     with tab_telemetry:
-        if not os.path.exists(pipeline_state_file):
+        if not master_map:
             st.info("📡 **Visual Telemetry Offline:** The workspace is currently sterile. Please ingest 10X matrices in the Control Room and execute Phases I through III to generate telemetry.")
         else:
             st.header("📊 Visual Telemetry Vault")
             st.markdown("Select an analytical sector to project physical evidence onto the dashboard.")
-
-            # 1. THE SECTOR MAP: Absolute 1-to-1 Mapping
-            # Keys are UI Labels, Values are physical folder names
+ 
             SECTOR_MAP = {
                 "Phase I: Quality Control (P03)": "p03_qc_filtering",
                 "Phase II: Topological Audits (P04)": "p04_clustering",
                 "Phase III: Marker Extractions (P05)": "p05_top_markers"
             }
 
-            # 2. THE SELECTION ENGINE
-            # This widget triggers a full script rerun on every change
             selection = st.selectbox(
                 "Select Analytical Sector", 
                 options=list(SECTOR_MAP.keys()),
@@ -298,33 +295,23 @@ def main() -> None:
                 key="telemetry_sector_selector" # Unique key forces DOM isolation
             )
 
-            # 3. PHYSICAL RESOLUTION
             target_sub_dir = SECTOR_MAP[selection]
             
-            # Diagnostic Telemetry (Small text to verify the path in real-time)
             st.caption(f"Scanning Physical Path: `./results/figures/{target_sub_dir}/`")
-
             st.divider()
-
-            # 4. THE EXECUTION
-            # Using a container ensures the previous tab content is physically purged
             with st.container():
                 render_visual_telemetry(target_sub_dir, selection)
-            pass
+            
     # --- TAB 2: ANNOTATION ENGINE ---
     with tab_annotate:
-        if not os.path.exists(pipeline_state_file):
+        if not master_map:
             st.info("✍️ **Annotation Engine Offline:** Awaiting structural topology. Execute the pipeline in the Control Room to unlock biological annotation.")
         else:
             st.markdown("### Human-in-the-Loop Topology Verification & Mapping")
-            
-            # Dynamic Tensor Interrogation & Fusion
             if active_path and active_label_key:
                 st.subheader(f"Interrogating Topology: `{active_label_key}`")
                 adata = load_tensor(active_path)
-                
                 if adata is not None:
-                    # Render Extracted Thermodynamic Markers (Read-Only)
                     if 'final_top_genes_per_cluster' in adata.uns:
                         df_markers = adata.uns['final_top_genes_per_cluster']
                         st.markdown("**Top Extracted Thermodynamic Markers (Wilcoxon Rank-Sum)**")
@@ -333,7 +320,6 @@ def main() -> None:
                             use_container_width=True
                         )
                     else:
-                        # Check if the void is due to mathematical purity (Terminal State)
                         if "Terminal_State" in active_path:
                             st.info(
                                 "**Terminal State Confirmed.**\n"
@@ -345,13 +331,9 @@ def main() -> None:
                         else:
                             st.warning("Marker dictionary missing from active tensor. Execute Phase III `P05_top_markers.py`.")
 
-                    # -----------------------------------------------------------------
-                    # 5. The Transient DataFrame Constructor
-                    # -----------------------------------------------------------------
                     st.divider()
                     st.markdown("### 🧬 Dual-Ledger Annotation Injection")
                     
-                    # Extract rigid mathematical clusters from the physical matrix
                     cluster_col = active_leiden if active_leiden else active_label_key
                     
                     if cluster_col in adata.obs.columns:
@@ -360,13 +342,11 @@ def main() -> None:
                             key=lambda x: int(x) if str(x).isdigit() else x
                         )
                         
-                        # Ensure the structural keys exist in the RAM vault
                         if active_label_key not in st.session_state.annotations:
                             st.session_state.annotations[active_label_key] = {str(c): "" for c in clusters}
                         if active_label_key not in st.session_state.ontologies:
                             st.session_state.ontologies[active_label_key] = {str(c): "" for c in clusters}
                             
-                        # Zipping Protocol: Fuse parallel ledgers into a flat 2D grid
                         df_state = []
                         for c in clusters:
                             c_str = str(c)
@@ -386,12 +366,9 @@ def main() -> None:
                             df_ui, 
                             use_container_width=True, 
                             hide_index=True,
-                            disabled=["Cluster ID"]  # Immutable barrier protecting the core topology
+                            disabled=["Cluster ID"]
                         )
 
-                        # -----------------------------------------------------------------
-                        # 6. The Commit Protocol (The Fracture)
-                        # -----------------------------------------------------------------
                         if st.button("💾 Seal Dual Ledgers to Disk", type="primary"):
                             for _, row in edited_df.iterrows():
                                 c_id = row["Cluster ID"]
@@ -406,9 +383,6 @@ def main() -> None:
                             
                             st.success("Ledgers mathematically fractured and written to disk. Ready for Phase IV Injection.")
 
-                        # -----------------------------------------------------------------
-                        # 7. The Recombination Engine (Executing P06)
-                        # -----------------------------------------------------------------
                         st.divider()
                         st.markdown("### ⚙️ Phase IV: Artifact Recombination")
                         st.markdown("Execute this strictly *after* you have completely populated and sealed the ledgers above.")
@@ -437,6 +411,6 @@ def main() -> None:
                         st.error(f"[ERROR] Required observation column '{cluster_col}' missing from matrix.")
                 else:
                     st.error(f"[ERROR] Failed to load matrix at physical path: {active_path}")
-            pass
+                    
 if __name__ == "__main__":
     main()
