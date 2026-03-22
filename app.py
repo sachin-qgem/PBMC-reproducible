@@ -213,9 +213,18 @@ def main() -> None:
             for directory in directories_to_clean:
                 if os.path.exists(directory):
                     shutil.rmtree(directory)
+            
+            directories_to_rebuild = [
+                "data/raw/pbmc3k_filtered_gene_bc_matrices/hg19", 
+                "data/objects", 
+                "results/figures/p03_qc_filtering",
+                "results/figures/p04_clustering",
+                "results/figures/p05_top_markers",
+                "results/figures/p06_annotation"
+            ]
+            for directory in directories_to_rebuild:
                 os.makedirs(directory, exist_ok=True)
             st.success("Workspace purged. 5-Sigma sterile environment achieved.")
-
         st.divider()
 
         st.markdown("### 2. The Ingestion Protocol")
@@ -237,26 +246,53 @@ def main() -> None:
 
         st.markdown("### 3. The Execution Engine")
         st.write("Trigger the analytical modules. WARNING: Observe the 16GB RAM boundary.")
-        
         col1, col2, col3 = st.columns(3)
         
         with col1:
             if st.button("Run Phase I (QC & Filter)"):
-                with st.spinner("Executing 5-MAD thermodynamic purge..."):
-                    P03_qc_filtering.main()
-                st.success("Phase I Complete: pbmc3k_qc.h5ad anchored.")
+                target_dir = "data/raw/pbmc3k_filtered_gene_bc_matrices/hg19"
+                required_files = ["matrix.mtx", "barcodes.tsv", "genes.tsv"]
                 
+                # Pre-Flight Audit: Check if the directory exists and contains the exact files
+                if not os.path.exists(target_dir):
+                    st.error("⛔ **Execution Blocked:** The workspace is purged. You must upload the 10X files first.")
+                else:
+                    missing_files = [f for f in required_files if not os.path.exists(os.path.join(target_dir, f))]
+                    if missing_files:
+                        st.error(f"⛔ **Execution Blocked:** Missing required raw files: {missing_files}. Please upload the correct 10X matrix files.")
+                    else:
+                        with st.spinner("Executing 5-MAD thermodynamic purge..."):
+                            try:
+                                P03_qc_filtering.main()
+                                st.success("Phase I Complete: pbmc3k_qc.h5ad anchored.")
+                            except Exception as e:
+                                st.error(f"Phase I Failed: {e}")
+
         with col2:
             if st.button("Run Phase II (Clustering)"):
-                with st.spinner("Computing Neighborhood Graphs & UMAPs..."):
-                    P04_clustering.main()
-                st.success("Phase II Complete: Topology established.")
-                
+                # Pre-Flight Audit: Ensure Phase I completed
+                if not os.path.exists("data/objects/pbmc3k_qc.h5ad"):
+                    st.error("⛔ **Execution Blocked:** Phase I output not found. You must successfully execute Phase I before clustering.")
+                else:
+                    with st.spinner("Computing Neighborhood Graphs & UMAPs..."):
+                        try:
+                            P04_clustering.main()
+                            st.success("Phase II Complete: Topology established.")
+                        except Exception as e:
+                            st.error(f"Phase II Failed: {e}")
+
         with col3:
             if st.button("Run Phase III (Markers)"):
-                with st.spinner("Extracting Biological Markers..."):
-                    P05_top_markers.main()
-                st.success("Phase III Complete: Telemetry Ready.")
+                # Pre-Flight Audit: Ensure Phase II completed
+                if not os.path.exists("data/objects/Dictionary_of_returns_from_orch_A.json"):
+                    st.error("⛔ **Execution Blocked:** Topological dictionaries not found. You must successfully execute Phase II first.")
+                else:
+                    with st.spinner("Extracting Biological Markers..."):
+                        try:
+                            P05_top_markers.main()
+                            st.success("Phase III Complete: Telemetry Ready.")
+                        except Exception as e:
+                            st.error(f"Phase III Failed: {e}")
 
         st.divider()
 
