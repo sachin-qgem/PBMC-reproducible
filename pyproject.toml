@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pbmc3k_pipeline"
+version = "2.0.0"
+description = "5-Sigma Reproducible PBMC3k Topology Pipeline"
+readme = "README.md"
+requires-python = "==3.11.*"
+dependencies = [
+    "numpy==2.4.3",
+    "scipy==1.17.1",
+    "pandas==2.3.3",
+    "pynndescent==0.5.13",
+    "umap-learn==0.5.11",
+    "igraph==1.0.0",
+    "leidenalg==0.11.0",
+    "anndata==0.12.10",
+    "scanpy==1.11.5",
+    "scikit-learn",
+    "celltypist",
+    "streamlit>=1.42.0",
+    "protobuf<=3.20.3"
+]
