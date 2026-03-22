@@ -55,5 +55,11 @@ prepare_hf:
 clean:
 	@echo "ANNIHILATING CACHE AND ENVIRONMENT..."
 	rm -rf $(ENV_PATH)
+	rm -rf $(RESULTS_DIR)/figures/*/*
+	rm -rf $(RESULTS_DIR)/*.json
+	rm -rf $(RESULTS_DIR)/*.csv
+	rm -rf data/objects/*
+	rm -rf cache/*
+	rm -rf logs/*
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	@echo "CLEAN COMPLETE."
