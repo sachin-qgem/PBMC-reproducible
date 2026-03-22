@@ -315,7 +315,7 @@ def stability_audit(training_filepath: str, key_for_saving_images: str,res_start
     
     if adata_A.n_obs > 250:
         print("\n[AUDIT] Initiating clustering stability audit...")
-        print("  -> [TEST 1] Resolution Sweep (0.1 to 2.0)...")
+        print(f"  -> [TEST 1] Resolution Sweep ({res_start} to {res_end})...")
         
         resolutions = np.arange(res_start,res_end,res_step).tolist()
         results = []
