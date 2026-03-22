@@ -6,14 +6,19 @@ Author-email: Sachin <qgemai@proton.me>
 Requires-Python: >=3.11
 Description-Content-Type: text/markdown
 License-File: LICENSE
-Requires-Dist: scanpy>=1.11.5
-Requires-Dist: anndata==0.12.10
+Requires-Dist: numpy==2.4.3
+Requires-Dist: scipy==1.17.1
 Requires-Dist: pandas==2.3.3
-Requires-Dist: numpy==1.26.4
-Requires-Dist: streamlit==1.42.0
+Requires-Dist: pynndescent==0.5.13
+Requires-Dist: umap-learn==0.5.11
+Requires-Dist: igraph==1.0.0
+Requires-Dist: leidenalg==0.11.0
+Requires-Dist: anndata==0.12.10
+Requires-Dist: scanpy==1.12
 Requires-Dist: scikit-learn
-Requires-Dist: pillow
 Requires-Dist: celltypist
+Requires-Dist: pillow
+Requires-Dist: streamlit>=1.42.0
 Dynamic: license-file
 
 ---
