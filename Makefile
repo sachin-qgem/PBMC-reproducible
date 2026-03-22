@@ -13,7 +13,7 @@ STREAMLIT = $(ENV_PATH)/bin/streamlit
 .PHONY: setup
 setup:
 	@echo "INITIATING HYBRID FORGE: Building Python 3.11 Bedrock..."
-	conda env create --prefix $(ENV_PATH) -f environment.yml --force
+	conda env create --prefix $(ENV_PATH) -f streamlit_based_env.yml
 	@echo "SUCCESS: Environment forged at $(ENV_PATH)"
 
 # --- PHASE I-III: THE EVIDENCE (AUTOMATED) ---
