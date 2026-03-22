@@ -55,7 +55,7 @@ prepare_hf:
 clean:
 	@echo "ANNIHILATING CACHE AND ENVIRONMENT..."
 	rm -rf $(ENV_PATH)
-	rm -rf $(RESULTS_DIR)/figures/*/*
+	rm -rf $(RESULTS_DIR)/figures/*
 	rm -rf $(RESULTS_DIR)/*.json
 	rm -rf $(RESULTS_DIR)/*.csv
 	rm -rf data/objects/*

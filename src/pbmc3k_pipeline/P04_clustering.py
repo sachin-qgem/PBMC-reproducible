@@ -224,7 +224,7 @@ def knn_umap_leiden(
         print(f"\n[AUDIT] Subsampling stability evaluation for '{key_name}'...")
         n_iterations = 20
         subsample_fraction = 0.8
-        
+        np.random.seed(42)
         original_labels = adata.obs[leiden_key].astype(str)
         unique_clusters = original_labels.unique()
         jaccard_ledger = {cluster: [] for cluster in unique_clusters}
@@ -292,7 +292,7 @@ def knn_umap_leiden(
     return leiden_key, neighbors_key
            
           
-def stability_audit(training_filepath: str, key_for_saving_images: str,res_start: float,res_end: float,res_step: float,n_neighbors: int) -> float:
+def stability_audit(training_filepath: str, key_for_saving_images: str,res_start: float,res_end: float,res_step: float,n_neighbors: int,n_pcs:int) -> float:
     """
     Executes an automated resolution sweep to identify the most stable 
     clustering plateau, evaluates robustness via subsampling, and checks 
@@ -321,7 +321,7 @@ def stability_audit(training_filepath: str, key_for_saving_images: str,res_start
         results = []
         
         sc.pp.neighbors(
-            adata_A, n_neighbors=n_neighbors, n_pcs=10, method='umap', 
+            adata_A, n_neighbors=n_neighbors, n_pcs=n_pcs, method='umap', 
             knn=True, metric='euclidean', random_state=42
         )
         
@@ -382,10 +382,9 @@ def stability_audit(training_filepath: str, key_for_saving_images: str,res_start
         audited_plateaus = []
         print("  -> [INFO] Validated Plateaus:")
         for block in carved_plateaus:
-            if block['count'] >= 3 and block['n_clusters'] > 1:
+            if block['count'] >= 2 and block['n_clusters'] >1:
                 mean_ari = np.mean(block['aris'])
                 std_ari = np.std(block['aris'])
-                
                 block['mean_ari'] = mean_ari
                 block['std_ari'] = std_ari
                 block['res_bounds'] = (min(block['resolutions']), max(block['resolutions']))
@@ -398,7 +397,7 @@ def stability_audit(training_filepath: str, key_for_saving_images: str,res_start
 
         strict_candidates = [
             p for p in audited_plateaus 
-            if p['mean_ari'] >= 0.85 and p['std_ari'] <= 0.25 and p['count'] >= 4
+            if p['mean_ari'] >= 0.8 and p['std_ari'] <= 0.25 and p['count'] >= 4
         ]
 
         if strict_candidates:
@@ -562,7 +561,7 @@ def npr_hvg_pca_recal(filepath: str, keys: str) -> None:
         
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
-            sc.experimental.pp.normalize_pearson_residuals(adata, theta=100.0)
+        sc.experimental.pp.normalize_pearson_residuals(adata, theta=100.0)
         sc.pp.pca(
             adata, n_comps=100, zero_center=True, svd_solver='arpack', mask_var='highly_variable'
         )
@@ -688,10 +687,9 @@ def calculate_dynamic_gravity(file_path:str) -> int:
     adata_temp = load_evidence(file_path)
     n_cells = adata_temp.n_obs
     del adata_temp
-    
     if n_cells < 1500:
         return 15
-    elif n_cells < 5000:
+    elif n_cells < 3000:
         return 20
     elif n_cells < 15000:
         return 25
@@ -729,7 +727,7 @@ def orchestrator_A(h5ad_path: str, save_folder_path: str, cell_cycle_genes_path:
     
     macro_neighbors_numbers = calculate_dynamic_gravity(training_file_path)
     print(f"\n[PHYSICS] Setting Macro neighbors numbers (k) to {macro_neighbors_numbers}")
-    macro_res = stability_audit(training_file_path,'macro',0.01,0.21,0.003,macro_neighbors_numbers)
+    macro_res = stability_audit(training_file_path,'macro',0.01,0.21,0.003,macro_neighbors_numbers,n_pcs=10)
     cell_cycle_check(training_file_path, cell_cycle_genes_path, n_neighbors=macro_neighbors_numbers, n_pcs=10, leiden_res=macro_res,file_save_key= 'training')
     macro_leiden_key, macro_neighbors_key = knn_umap_leiden(
         training_file_path, n_neighbors=macro_neighbors_numbers, n_pcs=10, leiden_res=macro_res, key_name='macro'
@@ -748,13 +746,13 @@ def orchestrator_A(h5ad_path: str, save_folder_path: str, cell_cycle_genes_path:
             
         npr_hvg_pca_recal(filepath, keys)
         micro_n_neighbors = calculate_dynamic_gravity(file_path=filepath)
-        ref_res = stability_audit(filepath, keys,0.1,2.1,0.03,micro_n_neighbors)
+        ref_res = stability_audit(filepath, keys,0.1,2.1,0.03,micro_n_neighbors,n_pcs=10)
         
         if ref_res is not None:
             cell_cycle_check(filepath, cell_cycle_genes_path, n_neighbors=micro_n_neighbors,
                               n_pcs=10, leiden_res=ref_res, file_save_key=keys)
             m_leiden, m_neighbors = knn_umap_leiden(
-                filepath, n_neighbors=micro_n_neighbors, n_pcs=15, leiden_res=ref_res, key_name=f'{keys}_micro'
+                filepath, n_neighbors=micro_n_neighbors, n_pcs=10, leiden_res=ref_res, key_name=f'{keys}_micro'
             )
             if m_leiden is not None:
                 micro_leiden_key_dict[keys] = m_leiden
