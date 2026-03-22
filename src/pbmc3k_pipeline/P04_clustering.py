@@ -724,12 +724,13 @@ def orchestrator_A(h5ad_path: str, save_folder_path: str, cell_cycle_genes_path:
     file_path_dict = random_split_data(h5ad_path, save_folder_path)
     training_file_path = file_path_dict['training_file']
     
-    cell_cycle_check(training_file_path, cell_cycle_genes_path, 10, 10, 0.05, 'training')
+    
     npr_hvg_pca_recal(training_file_path, 'training_file')
     
     macro_neighbors_numbers = calculate_dynamic_gravity(training_file_path)
     print(f"\n[PHYSICS] Setting Macro neighbors numbers (k) to {macro_neighbors_numbers}")
     macro_res = stability_audit(training_file_path,'macro',0.01,0.21,0.003,macro_neighbors_numbers)
+    cell_cycle_check(training_file_path, cell_cycle_genes_path, n_neighbors=macro_neighbors_numbers, n_pcs=10, leiden_res=macro_res,file_save_key= 'training')
     macro_leiden_key, macro_neighbors_key = knn_umap_leiden(
         training_file_path, n_neighbors=macro_neighbors_numbers, n_pcs=10, leiden_res=macro_res, key_name='macro'
     )
