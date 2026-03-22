@@ -21,11 +21,11 @@ setup:
 evidence:
 	@echo "GENERATING ANALYTICAL EVIDENCE..."
 	@echo "-> Running P03 (QC & Filtration)"
-	$(PYTHON) src/02_analysis_scripts/P03_qc_filtering.py
+	$(PYTHON) src/pbmc3k_pipeline/P03_qc_filtering.py
 	@echo "-> Running P04 (Clustering)"
-	$(PYTHON) src/02_analysis_scripts/P04_clustering.py
+	$(PYTHON) src/pbmc3k_pipeline/P04_clustering.py
 	@echo "-> Running P05 (Marker Extraction)"
-	$(PYTHON) src/02_analysis_scripts/P05_top_markers.py
+	$(PYTHON) src/pbmc3k_pipeline/P05_top_markers.py
 	@echo "SUCCESS: Evidence generated in ./results/figures/ and ./data/objects/"
 
 # --- PHASE IV-A: THE INTERVENTION (HUMAN-IN-THE-LOOP) ---
@@ -40,7 +40,7 @@ ui:
 p06:
 	@echo "EXECUTING PHASE IV RECOMBINATION..."
 	@echo "CAUTION: This assumes you have already populated the JSONs via 'make ui'."
-	$(PYTHON) src/02_analysis_scripts/P06_annotation.py
+	$(PYTHON) src/pbmc3k_pipeline/P06_annotation.py
 	@echo "SUCCESS: Final ML-Ready matrix forged."
 
 # --- CLOUD PRE-FLIGHT ---
