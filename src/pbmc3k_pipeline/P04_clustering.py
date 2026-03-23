@@ -650,7 +650,7 @@ def execute_macro_sweep(h5ad_path: str, save_folder_path: str) -> dict:
     
     # Generate rigorous float grids
     macro_k_grid = np.arange(5, 105, 5).tolist()
-    macro_r_grid = np.round(np.arange(0.01, 0.21, 0.01), 2).tolist()
+    macro_r_grid = np.round(np.arange(0.01, 0.21, 0.02), 2).tolist()
     
     # Run the audit (This generates and saves the SVG for Streamlit)
     suggested_k, suggested_r = topographical_mesa_audit(
@@ -768,7 +768,7 @@ def execute_micro_sweep(filepath: str, micro_key: str, plt_fig_dir: str) -> dict
     npr_hvg_pca_recal(filepath, micro_key)
     
     micro_k_grid = np.arange(5, 105, 5).tolist()
-    micro_r_grid = np.round(np.arange(0.05, 2.10, 0.05), 2).tolist()
+    micro_r_grid = np.round(np.arange(0.1, 2.10, 0.2), 2).tolist()
     
     suggested_k, suggested_r = topographical_mesa_audit(
         filepath=filepath, key_name=micro_key, k_grid=micro_k_grid, 
