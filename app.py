@@ -174,7 +174,7 @@ def main() -> None:
     matrix selection routing, transient dataframe rendering, Subprocess execution,
     and the final fracture protocol to seal data to disk.
     """
-    st.title("🧬 PBMC3k Human-in-the-Loop Pipeline")
+    st.title("🧬 PBMC Human-in-the-Loop Pipeline")
     
     # 1. Establish the RAM Vault
     initialize_session_vault()
