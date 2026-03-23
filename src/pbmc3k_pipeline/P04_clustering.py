@@ -372,20 +372,44 @@ def topographical_mesa_audit(
         return 30, 0.05
 
     # =========================================================================
-    # PHASE 2: GENERATE AND SAVE THE VISUAL MAP FOR STREAMLIT
+    # PHASE 2: GENERATE DUAL-PANE VISUAL TELEMETRY
     # =========================================================================
     pivot_modularity = df.pivot(index='k_neighbors', columns='resolution_r', values='modularity')
     pivot_clusters = df.pivot(index='k_neighbors', columns='resolution_r', values='n_clusters')
 
-    plt.figure(figsize=(14, 10))
+    # Expand the physical canvas to hold both the Ledger and the Topography
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(24, 10))
+
+    # --- PANE 1: The Discrete Ledger (Heatmap) ---
     sns.heatmap(
         pivot_modularity, annot=pivot_clusters, fmt=".0f", cmap="viridis", 
         cbar_kws={'label': 'Structural Modularity (Q)'},
-        annot_kws={"size": 12, "weight": "bold"}
+        annot_kws={"size": 12, "weight": "bold"}, ax=ax1
     )
-    plt.title(f"[{label}] Biological Mesa Map\n[Numbers = Cluster Count | Color = Modularity]", fontweight='bold')
-    plt.xlabel("Leiden Resolution (Temperature, r)", fontweight='bold')
-    plt.ylabel("KNN Neighbors (Scaffolding, k)", fontweight='bold')
+    ax1.set_title(f"[{label}] Biological State Map\n[Numbers = Clusters | Color = Modularity]", fontweight='bold')
+    ax1.set_xlabel("Leiden Resolution (Temperature, r)", fontweight='bold')
+    ax1.set_ylabel("KNN Neighbors (Scaffolding, k)", fontweight='bold')
+
+    # --- PANE 2: The Physical Topography (Contour) ---
+    X = pivot_modularity.columns.values
+    Y = pivot_modularity.index.values
+    Z = pivot_modularity.values
+
+    # 1. Fill the elevation with color
+    contour_filled = ax2.contourf(X, Y, Z, levels=20, cmap="viridis")
+    
+    # 2. Draw the strict physical boundaries (The Cliffs)
+    contour_lines = ax2.contour(X, Y, Z, levels=20, colors='black', linewidths=0.8, alpha=0.7)
+    ax2.clabel(contour_lines, inline=True, fontsize=9, fmt='%.2f')
+
+    fig.colorbar(contour_filled, ax=ax2, label='Structural Modularity (Q)')
+    ax2.set_title(f"[{label}] Topographical Stability Map\n[Wide Spacing = Stable | Tight Lines = Volatile Cliff]", fontweight='bold')
+    ax2.set_xlabel("Leiden Resolution (Temperature, r)", fontweight='bold')
+    ax2.set_ylabel("KNN Neighbors (Scaffolding, k)", fontweight='bold')
+    
+    # Force the Y-axis to match the heatmap's orientation (k ascending downwards)
+    ax2.invert_yaxis()
+
     plt.tight_layout()
     
     svg_path = f"{plt_fig_dir}/{key_name}_thermodynamic_surface.svg"
