@@ -27,7 +27,7 @@ import streamlit as st
 # =============================================================================
 # ABSOLUTE LAW: Page config must be the very first Streamlit command executed
 # =============================================================================
-st.set_page_config(page_title="PBMC3k Biological Observatory", layout="wide")
+st.set_page_config(page_title="PBMC Biological Observatory", layout="wide")
 # =============================================================================
 # THE WORMHOLE: Importing the Packaged Pipeline
 # =============================================================================
@@ -59,6 +59,27 @@ def initialize_session_vault() -> None:
         st.session_state.annotations = {}
     if "ontologies" not in st.session_state:
         st.session_state.ontologies = {}
+    if "phase2_grid_swept" not in st.session_state:
+        st.session_state.phase2_grid_swept = False
+    if "phase2_complete" not in st.session_state:
+        st.session_state.phase2_complete = False
+    # --- PHASE II: ITERATIVE STATE MACHINE ---
+    if "phase2_macro_swept" not in st.session_state:
+        st.session_state.phase2_macro_swept = False
+    if "phase2_macro_locked" not in st.session_state:
+        st.session_state.phase2_macro_locked = False
+    if "micro_queue" not in st.session_state:
+        st.session_state.micro_queue = []
+    if "current_micro_key" not in st.session_state:
+        st.session_state.current_micro_key = None
+    if "current_micro_swept" not in st.session_state:
+        st.session_state.current_micro_swept = False
+    if "final_micro_leiden_dict" not in st.session_state:
+        st.session_state.final_micro_leiden_dict = {}
+    if "final_micro_neighbors_dict" not in st.session_state:
+        st.session_state.final_micro_neighbors_dict = {}
+    if "phase2_complete" not in st.session_state:
+        st.session_state.phase2_complete = False
 
 @st.cache_resource(show_spinner="Loading Heavy Tensor into RAM...")
 def load_tensor(filepath: str) -> Optional[ad.AnnData]:
@@ -260,14 +281,12 @@ def main() -> None:
             if st.button("Run Phase I (QC & Filter)"):
                 target_dir = "data/raw/pbmc3k_filtered_gene_bc_matrices/hg19"
                 required_files = ["matrix.mtx", "barcodes.tsv", "genes.tsv"]
-                
-                # Pre-Flight Audit: Check if the directory exists and contains the exact files
                 if not os.path.exists(target_dir):
-                    st.error("⛔ **Execution Blocked:** The workspace is purged. You must upload the 10X files first.")
+                    st.error("⛔ **Execution Blocked:** The workspace is purged. Upload files first.")
                 else:
                     missing_files = [f for f in required_files if not os.path.exists(os.path.join(target_dir, f))]
                     if missing_files:
-                        st.error(f"⛔ **Execution Blocked:** Missing required raw files: {missing_files}. Please upload the correct 10X matrix files.")
+                        st.error(f"⛔ **Execution Blocked:** Missing files: {missing_files}.")
                     else:
                         with st.spinner("Executing 5-MAD thermodynamic purge..."):
                             try:
@@ -277,23 +296,31 @@ def main() -> None:
                                 st.error(f"Phase I Failed: {e}")
 
         with col2:
-            if st.button("Run Phase II (Clustering)"):
-                # Pre-Flight Audit: Ensure Phase I completed
-                if not os.path.exists("data/objects/pbmc3k_qc.h5ad"):
-                    st.error("⛔ **Execution Blocked:** Phase I output not found. You must successfully execute Phase I before clustering.")
+            if not st.session_state.phase2_macro_swept:
+                if st.button("Run Phase II (Start: Macro Sweep)"):
+                    if not os.path.exists("data/objects/pbmc3k_qc.h5ad"):
+                        st.error("⛔ **Execution Blocked:** Phase I output not found.")
+                    else:
+                        with st.spinner("Forging Macro Background Field..."):
+                            sweep_state = P04_clustering.execute_macro_sweep(
+                                h5ad_path="data/objects/pbmc3k_qc.h5ad", 
+                                save_folder_path="data/objects"
+                            )
+                            st.session_state.p04_training_file_path = sweep_state['training_file_path']
+                            st.session_state.p04_file_path_dict = sweep_state['file_path_dict']
+                            st.session_state.p04_suggested_k = sweep_state['suggested_k']
+                            st.session_state.p04_suggested_r = sweep_state['suggested_r']
+                            st.session_state.phase2_macro_swept = True
+                            st.rerun()
+            else:
+                if st.session_state.phase2_complete:
+                    st.success("Phase II Complete: All Topologies established.")
                 else:
-                    with st.spinner("Computing Neighborhood Graphs & UMAPs..."):
-                        try:
-                            P04_clustering.main()
-                            st.success("Phase II Complete: Topology established.")
-                        except Exception as e:
-                            st.error(f"Phase II Failed: {e}")
-
+                    st.warning("Pipeline Active: See Human Overrides below.")
         with col3:
             if st.button("Run Phase III (Markers)"):
-                # Pre-Flight Audit: Ensure Phase II completed
                 if not os.path.exists("data/objects/Dictionary_of_returns_from_orch_A.json"):
-                    st.error("⛔ **Execution Blocked:** Topological dictionaries not found. You must successfully execute Phase II first.")
+                    st.error("⛔ **Execution Blocked:** Topological dictionaries not found.")
                 else:
                     with st.spinner("Extracting Biological Markers..."):
                         try:
@@ -302,6 +329,120 @@ def main() -> None:
                         except Exception as e:
                             st.error(f"Phase III Failed: {e}")
 
+        # =====================================================================
+        # THE TEMPORAL AIRLOCKS (MACRO AND MICRO ITERATIONS)
+        # =====================================================================
+        
+        # AIRLOCK 1: THE MACRO LOCK
+        if st.session_state.phase2_macro_swept and not st.session_state.phase2_macro_locked:
+            st.divider()
+            st.markdown("### 🛑 Phase II: Human-in-the-Loop [MACRO-STATE]")
+            
+            svg_file = "./results/figures/p04_clustering/macro_thermodynamic_surface.svg"
+            if os.path.exists(svg_file):
+                with open(svg_file, "r", encoding="utf-8") as f:
+                    svg_code = f.read()
+                svg_code = re.sub(r'width="[^"]+"', 'width="100%"', svg_code, count=1)
+                svg_code = re.sub(r'height="[^"]+"', 'height="auto"', svg_code, count=1)
+                b64_svg = base64.b64encode(svg_code.encode("utf-8")).decode("utf-8")
+                img_src = f"data:image/svg+xml;base64,{b64_svg}"
+                st.markdown(f"<div style='border: 1px solid #444; padding: 10px; background: white;'><img src='{img_src}' style='width: 100%;'></div>", unsafe_allow_html=True)
+
+            with st.form("macro_override_form"):
+                c1, c2 = st.columns(2)
+                with c1:
+                    chosen_k = st.number_input("Optimal k (Neighbors)", value=int(st.session_state.p04_suggested_k), min_value=10, max_value=100, step=5)
+                with c2:
+                    chosen_r = st.number_input("Optimal r (Resolution)", value=float(st.session_state.p04_suggested_r), min_value=0.01, max_value=2.0, step=0.01)
+                    
+                if st.form_submit_button("Lock Macro Coordinates & Initiate Micro-Queue", type="primary"):
+                    with st.spinner("Locking Macro-State and Extracting Micro-Continents..."):
+                        macro_state = P04_clustering.lock_macro_and_extract_micro_queue(
+                            st.session_state.p04_training_file_path, chosen_k, chosen_r, './data/regev_lab_cell_cycle_genes.txt'
+                        )
+                        st.session_state.macro_leiden_key = macro_state['macro_leiden_key']
+                        st.session_state.macro_neighbors_key = macro_state['macro_neighbors_key']
+                        st.session_state.micro_filepaths_dict = macro_state['micro_filepaths_dict']
+                        
+                        # Build the processing queue (Ignoring Terminal States automatically)
+                        st.session_state.micro_queue = [k for k in macro_state['micro_filepaths_dict'].keys() if 'Terminal_State' not in k]
+                        
+                        st.session_state.phase2_macro_locked = True
+                        st.rerun()
+
+        # AIRLOCK 2: THE MICRO LOOP
+        if st.session_state.phase2_macro_locked and not st.session_state.phase2_complete:
+            st.divider()
+            
+            # If we have items in the queue, process the next one
+            if len(st.session_state.micro_queue) > 0:
+                current_micro = st.session_state.micro_queue[0]
+                filepath = st.session_state.micro_filepaths_dict[current_micro]
+                
+                st.markdown(f"### 🛑 Phase II: Human-in-the-Loop [MICRO-STATE: `{current_micro}`]")
+                st.info(f"{len(st.session_state.micro_queue)} Micro-states remaining in queue.")
+                
+                # Step 2A: Automatically Sweep the current micro-state if not done yet
+                if not st.session_state.current_micro_swept:
+                    with st.spinner(f"Sweeping thermodynamic surface for {current_micro}..."):
+                        micro_sweep = P04_clustering.execute_micro_sweep(filepath, current_micro, "./results/figures/p04_clustering")
+                        st.session_state.current_micro_k = micro_sweep['suggested_k']
+                        st.session_state.current_micro_r = micro_sweep['suggested_r']
+                        st.session_state.current_micro_swept = True
+                        st.rerun()
+                
+                # Step 2B: Display the Map and Wait for Human Input
+                if st.session_state.current_micro_swept:
+                    svg_file = f"./results/figures/p04_clustering/{current_micro}_thermodynamic_surface.svg"
+                    if os.path.exists(svg_file):
+                        with open(svg_file, "r", encoding="utf-8") as f:
+                            svg_code = f.read()
+                        svg_code = re.sub(r'width="[^"]+"', 'width="100%"', svg_code, count=1)
+                        svg_code = re.sub(r'height="[^"]+"', 'height="auto"', svg_code, count=1)
+                        b64_svg = base64.b64encode(svg_code.encode("utf-8")).decode("utf-8")
+                        img_src = f"data:image/svg+xml;base64,{b64_svg}"
+                        st.markdown(f"<div style='border: 1px solid #444; padding: 10px; background: white;'><img src='{img_src}' style='width: 100%;'></div>", unsafe_allow_html=True)
+                    
+                    with st.form(f"micro_override_{current_micro}"):
+                        c1, c2 = st.columns(2)
+                        with c1:
+                            chosen_k = st.number_input("Optimal k (Neighbors)", value=int(st.session_state.current_micro_k), min_value=5, max_value=60, step=5)
+                        with c2:
+                            chosen_r = st.number_input("Optimal r (Resolution)", value=float(st.session_state.current_micro_r), min_value=0.1, max_value=2.0, step=0.1)
+                            
+                        if st.form_submit_button(f"Lock `{current_micro}` & Proceed to Next", type="primary"):
+                            with st.spinner(f"Locking {current_micro} and calculating Jaccard Stability..."):
+                                micro_result = P04_clustering.lock_micro_state(
+                                    filepath, current_micro, chosen_k, chosen_r, './data/regev_lab_cell_cycle_genes.txt'
+                                )
+                                # Save the dictionaries
+                                if micro_result['m_leiden']:
+                                    st.session_state.final_micro_leiden_dict[current_micro] = micro_result['m_leiden']
+                                    st.session_state.final_micro_neighbors_dict[current_micro] = micro_result['m_neighbors']
+                                
+                                # Pop the completed item from the queue and reset the sweep state for the next one
+                                st.session_state.micro_queue.pop(0)
+                                st.session_state.current_micro_swept = False
+                                st.rerun()
+            
+            # Step 3: If queue is empty, Seal the Pipeline
+            else:
+                st.success("Micro-Queue Exhausted. All states locked.")
+                if st.button("Seal Pipeline and Execute Orchestrator B Projection", type="primary"):
+                    with st.spinner("Sealing final JSON ledgers and casting projections..."):
+                        P04_clustering.seal_phase_II_pipeline(
+                            h5ad_path="data/objects/pbmc3k_qc.h5ad",
+                            save_folder_path="data/objects",
+                            file_path_dict=st.session_state.p04_file_path_dict,
+                            macro_leiden_key=st.session_state.macro_leiden_key,
+                            macro_neighbors_key=st.session_state.macro_neighbors_key,
+                            micro_filepaths_dict=st.session_state.micro_filepaths_dict,
+                            micro_leiden_dict=st.session_state.final_micro_leiden_dict,
+                            micro_neighbors_dict=st.session_state.final_micro_neighbors_dict
+                        )
+                        st.session_state.phase2_complete = True
+                        st.rerun()
+                    
         st.divider()
 
         st.markdown("### 4. Artifact Extraction")

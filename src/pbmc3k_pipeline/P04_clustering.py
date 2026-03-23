@@ -10,6 +10,10 @@ import numpy as np
 import pandas as pd
 import scanpy as sc
 import seaborn as sns
+import scipy.sparse as sp
+from scipy.sparse.linalg import eigsh
+from scipy.stats import entropy
+import igraph as ig
 from math import log2
 from sklearn.metrics import adjusted_rand_score
 from sklearn.model_selection import train_test_split
@@ -219,56 +223,64 @@ def knn_umap_leiden(
                 legend_fontsize = 'x-small',legend_fontweight = 'bold',
                 legend_fontoutline = 3,save=f".svg")
         
-        print(f"\n[AUDIT] Subsampling stability evaluation for '{key_name}'...")
+        print(f"\n [AUDIT] Subsampling stability evaluation for '{key_name}'...")
         n_iterations = 20
         subsample_fraction = 0.8
         np.random.seed(42)
+        
         original_labels = adata.obs[leiden_key].astype(str)
         unique_clusters = original_labels.unique()
         jaccard_ledger = {cluster: [] for cluster in unique_clusters}
+        
+        # 5-Sigma Physical Law: Scaffolding must scale linearly with mass to maintain density
+        boot_k = max(2, int(n_neighbors * subsample_fraction))
         
         for i in range(n_iterations):
             n_keep = int(adata_su_check.n_obs * subsample_fraction)
             surviving_indices = np.random.choice(
                 adata_su_check.obs_names, size=n_keep, replace=False
             )
+            
             adata_sub = adata_su_check[surviving_indices].copy()
             
             sc.pp.neighbors(
-                adata_sub, n_neighbors=n_neighbors, n_pcs=n_pcs, method='umap', 
-                knn=True, metric='euclidean', random_state=42, 
+                adata_sub, n_neighbors=boot_k, n_pcs=n_pcs, method='umap',
+                knn=True, metric='euclidean', random_state=42,
                 use_rep='X_pca', key_added='boot_neighbors'
             )
+            
             sc.tl.leiden(
-                adata_sub, resolution=leiden_res, neighbors_key='boot_neighbors', 
+                adata_sub, resolution=leiden_res, neighbors_key='boot_neighbors',
                 key_added='boot_leiden', random_state=42
             )
             
             new_labels = adata_sub.obs['boot_leiden'].astype(str)
             
             for orig_cluster in unique_clusters:
-                orig_cells_in_sub = adata_sub.obs_names[
-                    original_labels[surviving_indices] == orig_cluster
-                ]
+                # 5-Sigma Data Engineering: .values prevents silent Pandas index misalignment
+                mask = (original_labels[surviving_indices] == orig_cluster).values
+                orig_cells_in_sub = adata_sub.obs_names[mask]
                 
                 if len(orig_cells_in_sub) == 0:
                     jaccard_ledger[orig_cluster].append(0.0)
                     continue
                     
                 best_match_cluster = new_labels[orig_cells_in_sub].value_counts().index[0]
+                
                 set_A = set(orig_cells_in_sub)
                 set_B = set(adata_sub.obs_names[new_labels == best_match_cluster])
                 
-                intersection = len(set_A.intersection(set_B))
-                union = len(set_A.union(set_B))
-                jaccard_score = intersection / union if union > 0 else 0.0
+                union_len = len(set_A.union(set_B))
+                jaccard_score = len(set_A.intersection(set_B)) / union_len if union_len > 0 else 0.0
+                
                 jaccard_ledger[orig_cluster].append(jaccard_score)
                 
             del adata_sub
             gc.collect()
-
-        print(f"--- JACCARD UNCERTAINTY DIAGNOSTIC: {key_name} ---")
+        
+        print(f" JACCARD UNCERTAINTY DIAGNOSTIC: {key_name} ---")
         su_grades_for_disk = {}
+        
         for orig_cluster, scores in jaccard_ledger.items():
             mean_score = np.mean(scores)
             if mean_score >= 0.85:
@@ -278,9 +290,10 @@ def knn_umap_leiden(
             else:
                 grade = "[LOW STABILITY]"
                 
-            print(f" Cluster {orig_cluster}: Jaccard = {mean_score:.3f} {grade}")
+            print(f"  Cluster {orig_cluster}: Jaccard = {mean_score:.3f} {grade}")
             su_grades_for_disk[orig_cluster] = float(mean_score)
             
+        # The Permanent Anchor
         adata.uns[f'{leiden_key}_SU_grades'] = su_grades_for_disk
         adata.write_h5ad(training_side_file_path)
         
@@ -289,197 +302,146 @@ def knn_umap_leiden(
     
     return leiden_key, neighbors_key
            
-          
-def stability_audit(training_filepath: str, key_for_saving_images: str,res_start: float,res_end: float,res_step: float,n_neighbors: int,n_pcs:int) -> float:
-    """
-    Executes an automated resolution sweep to identify the most stable 
-    clustering plateau, evaluates robustness via subsampling, and checks 
-    canonical biological markers.
 
-    Parameters
-    ----------
-    training_filepath : str
-        Path to the target AnnData file.
-    key_for_saving_images : str
-        Prefix for generated output plots.
-
-    Returns
-    -------
-    float
-        The automatically selected reference resolution.
+def topographical_mesa_audit(
+    filepath: str, 
+    key_name: str, 
+    k_grid: list, 
+    r_grid: list,
+    plt_fig_dir: str,
+    n_pcs: int = 10
+) -> tuple:
     """
-    adata_A = load_evidence(training_filepath)
-    ref_res = None
+    Executes a Pure Modularity Topographical Audit (Direction 1).
+    Scores biological macro-states by balancing structural Modularity (Q) 
+    with topographical Area to find the most stable biological plateau.
+    """
+    import numpy as np
+    import pandas as pd
+    import igraph as ig
+    import scanpy as sc
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    import gc
     
-    if adata_A.n_obs > 250:
-        print("\n[AUDIT] Initiating clustering stability audit...")
-        print(f"  -> [TEST 1] Resolution Sweep ({res_start} to {res_end})...")
-        
-        resolutions = np.arange(res_start,res_end,res_step).tolist()
-        results = []
-        
-        sc.pp.neighbors(
-            adata_A, n_neighbors=n_neighbors, n_pcs=n_pcs, method='umap', 
-            knn=True, metric='euclidean', random_state=42
-        )
-        
-        for res in resolutions:
-            key = f"leiden_res_{res}"
-            sc.tl.leiden(adata_A, resolution=res, key_added=key, flavor='leidenalg')
-            n_clusters = len(adata_A.obs[key].unique())
-            results.append({'res': res, 'n_clusters': n_clusters, 'key': key})
+    label = key_name.upper()
+    print(f"\n[{label}] Initiating Topographical Mesa Audit (Pure Modularity)...")
+    
+    adata_raw = sc.read_h5ad(filepath)
+    n_cells = adata_raw.n_obs
+    actual_pcs = min(n_pcs, n_cells - 1, adata_raw.obsm['X_pca'].shape[1] if 'X_pca' in adata_raw.obsm else n_pcs)
+    
+    dir1_ledger = []
+
+    # =========================================================================
+    # PHASE 1: THE THERMODYNAMIC SWEEP (PURE MODULARITY)
+    # =========================================================================
+    for k in k_grid:
+        if k >= n_cells: 
+            continue
             
-        df_res = pd.DataFrame(results)
-        aris = [0.0]
+        sc.pp.neighbors(adata_raw, n_neighbors=k, n_pcs=actual_pcs, knn=True, use_rep='X_pca')
+        adj = adata_raw.obsp['connectivities']
+        sources, targets = adj.nonzero()
         
-        for i in range(1, len(df_res)):
-            prev_key = df_res.iloc[i-1]['key']
-            curr_key = df_res.iloc[i]['key']
-            score = adjusted_rand_score(adata_A.obs[prev_key], adata_A.obs[curr_key])
-            aris.append(score)
+        g = ig.Graph(n=n_cells, directed=False)
+        g.add_edges(list(zip(sources, targets)))
+        g.es['weight'] = adj[sources, targets].A1
+        
+        for r in r_grid:
+            sc.tl.leiden(adata_raw, resolution=r, key_added='temp_cluster', flavor='leidenalg')
+            labels = adata_raw.obs['temp_cluster'].astype(str)
+            n_clusters = len(labels.unique())
             
-        df_res['neighbor_ari'] = aris
-        
-        plt.figure(figsize=(25, 13))
-        sns.lineplot(data=df_res, x='res', y='n_clusters', marker='o', label='Cluster Count')
-        ax2 = plt.twinx()
-        sns.lineplot(
-            data=df_res, x='res', y='neighbor_ari', color='red', 
-            marker='x', ax=ax2, label='Stability (ARI)'
-        )
-        plt.title("Parameter Stability: Cluster Count vs. ARI")
-        plt.savefig(f"{plt_fig_dir}/{key_for_saving_images}_stability_resolution_sweep.svg")
-        plt.close()
-
-        # Automated Plateau Extraction Logic
-        print("  -> [INFO] Scanning arrays for topological plateaus...")
-        carved_plateaus = []
-        current_cluster_count = None
-        current_block = {}
-
-        for index, row in df_res.iterrows():
-            nc = row['n_clusters']
-            res = row['res']
-            ari = row['neighbor_ari']
-
-            if nc != current_cluster_count:
-                if current_block:
-                    carved_plateaus.append(current_block)
-                current_cluster_count = nc
-                current_block = {
-                    'n_clusters': nc, 'count': 1, 'resolutions': [res], 'aris': [ari]
-                }
-            else:
-                current_block['count'] += 1
-                current_block['resolutions'].append(res)
-                current_block['aris'].append(ari)
-
-        if current_block:
-            carved_plateaus.append(current_block)
-
-        audited_plateaus = []
-        print("  -> [INFO] Validated Plateaus:")
-        for block in carved_plateaus:
-            if block['count'] >= 2 and block['n_clusters'] >1:
-                mean_ari = np.mean(block['aris'])
-                std_ari = np.std(block['aris'])
-                block['mean_ari'] = mean_ari
-                block['std_ari'] = std_ari
-                block['res_bounds'] = (min(block['resolutions']), max(block['resolutions']))
-                audited_plateaus.append(block)
-                print(
-                    f"     Clusters: {block['n_clusters']:<2} | Width: {block['count']:<2} | "
-                    f"Bounds: {block['res_bounds'][0]:.2f}-{block['res_bounds'][1]:.2f} | "
-                    f"Mean ARI: {mean_ari:.3f} | Variance: {std_ari:.4f}"
-                )
-
-        strict_candidates = [
-            p for p in audited_plateaus 
-            if p['mean_ari'] >= 0.85 and p['std_ari'] <= 0.25 and p['count'] >= 4
-        ]
-
-        if strict_candidates:
-            strict_candidates.sort(key=lambda x: x['n_clusters'])
-            winner = strict_candidates[0]
-        elif audited_plateaus:
-            print("  -> [WARNING] Strict stability not met. Relaxing variance constraint...")
-            audited_plateaus.sort(key=lambda x: (x['n_clusters'], -x['mean_ari']))
-            winner = audited_plateaus[0]
-        else:
-            print("  -> [ERROR] Matrix is unstable. Defaulting to maximum absolute ARI...")
-            ref_res = round(df_res.loc[df_res['neighbor_ari'].idxmax(), 'res'], 3)
-            winner = None
-
-        if winner:
-            target_index = int(winner['count'] * 0.6)
-            ref_res = round(winner['resolutions'][target_index], 3)
-            print(f"\n  -> [SUCCESS] Optimal Target: {winner['n_clusters']} Clusters (Mean ARI: {winner['mean_ari']:.3f}).")
-            print(f"  -> Extracted coordinate: {ref_res:.3f}")
-
-        # Subsampling Robustness
-        print(f"  -> [TEST 2] Subsampling evaluation at Res {ref_res} (80% Retention)...")
-        if f'leiden_res_{ref_res}' not in adata_A.obs:
-            sc.tl.leiden(
-                adata_A, resolution=ref_res, key_added=f'leiden_res_{ref_res}', flavor='leidenalg'
-            )
+            map_dict = {l: i for i, l in enumerate(labels.unique())}
+            membership = [map_dict[l] for l in labels]
             
-        A_sub_idx, _ = train_test_split(
-            adata_A.obs_names, test_size=0.2, random_state=42, shuffle=True
-        )
-        adata_A_test_sub = adata_A[A_sub_idx].copy()
-        
-        sc.pp.neighbors(adata_A_test_sub, n_neighbors=n_neighbors, n_pcs=10, use_rep='X_pca')
-        sc.tl.leiden(
-            adata_A_test_sub, resolution=ref_res, key_added='leiden_sub', flavor='leidenalg'
-        )
-        
-        original_labels = adata_A.obs.loc[adata_A_test_sub.obs_names, f'leiden_res_{ref_res}']
-        new_labels = adata_A_test_sub.obs['leiden_sub']
-        robustness_score = adjusted_rand_score(original_labels, new_labels)
-        
-        print(f"  -> Structural Robustness Score (ARI): {robustness_score:.3f}")
-        if robustness_score < 0.7:
-            print("     [WARNING] Clusters exhibit structural instability under subsampling.")
-        else:
-            print("     [SUCCESS] Clusters are robust.")
-
-        # Marker Gene Enrichment Audit
-        print(f"  -> [TEST 3] Marker Gene Enrichment Audit (at Res {ref_res})...")
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=RuntimeWarning)
-            sc.tl.rank_genes_groups(adata_A, groupby=f'leiden_res_{ref_res}', method='wilcoxon')
+            # The 5-Sigma Truth: Pure Modularity (Q) without Entropy corruption
+            modularity_val = ig.VertexClustering(g, membership=membership).modularity
             
-        result_df = pd.DataFrame(adata_A.uns['rank_genes_groups']['names']).head(3)
-        print("  -> Top 3 Marker Genes per Cluster:")
-        print(result_df)
+            dir1_ledger.append({
+                'k_neighbors': k, 
+                'resolution_r': r, 
+                'modularity': modularity_val, 
+                'n_clusters': n_clusters
+            })
+
+    df = pd.DataFrame(dir1_ledger)
+    if df.empty: 
+        print(f"[{label}] WARNING: Grid failure. Defaulting to safe baseline.")
+        return 30, 0.05
+
+    # =========================================================================
+    # PHASE 2: GENERATE AND SAVE THE VISUAL MAP FOR STREAMLIT
+    # =========================================================================
+    pivot_modularity = df.pivot(index='k_neighbors', columns='resolution_r', values='modularity')
+    pivot_clusters = df.pivot(index='k_neighbors', columns='resolution_r', values='n_clusters')
+
+    plt.figure(figsize=(14, 10))
+    sns.heatmap(
+        pivot_modularity, annot=pivot_clusters, fmt=".0f", cmap="viridis", 
+        cbar_kws={'label': 'Structural Modularity (Q)'},
+        annot_kws={"size": 12, "weight": "bold"}
+    )
+    plt.title(f"[{label}] Biological Mesa Map\n[Numbers = Cluster Count | Color = Modularity]", fontweight='bold')
+    plt.xlabel("Leiden Resolution (Temperature, r)", fontweight='bold')
+    plt.ylabel("KNN Neighbors (Scaffolding, k)", fontweight='bold')
+    plt.tight_layout()
+    
+    svg_path = f"{plt_fig_dir}/{key_name}_thermodynamic_surface.svg"
+    plt.savefig(svg_path, format="svg")
+    plt.close()
+
+    # =========================================================================
+    # PHASE 3: AUTONOMOUS SCORING (For terminal logging & UI defaults)
+    # =========================================================================
+    state_metrics = []
+    for n_state in df['n_clusters'].unique():
+        df_state = df[df['n_clusters'] == n_state]
+        state_metrics.append({
+            'n_clusters': n_state, 
+            'area': len(df_state), 
+            'elevation': df_state['modularity'].quantile(0.75)
+        })
         
-        marker_genes_dict = {
-            'B-cell': ['MS4A1', 'CD79A'],
-            'T-cell': ['CD3D', 'IL7R', 'CD8A'],
-            'NK': ['GNLY', 'NKG7'],
-            'Mono': ['CD14', 'FCGR3A'],
-            'Dendritic': ['FCER1A', 'CST3'],
-            'Platelet': ['PPBP']
-        }
-        
-        valid_markers = {
-            k: [g for g in v if g in adata_A.var_names] 
-            for k, v in marker_genes_dict.items()
-        }
-        
-        print("  -> Generating sanity dotplot...")
-        sc.pl.dotplot(
-            adata_A, valid_markers, groupby=f'leiden_res_{ref_res}', 
-            standard_scale='var', show=False, save= f"_{key_for_saving_images}_stability_biological_sanity.svg"
-        )
-        
-        del adata_A_test_sub
-        
-    del adata_A
+    df_metrics = pd.DataFrame(state_metrics)
+    
+    # Normalize Area and Elevation to calculate the physical cross-product
+    df_metrics['area_norm'] = df_metrics['area'] / df_metrics['area'].max()
+    df_metrics['elevation_norm'] = df_metrics['elevation'] / df_metrics['elevation'].max()
+    df_metrics['mesa_score'] = df_metrics['area_norm'] * df_metrics['elevation_norm']
+    
+    # Lock onto the dominant biological state
+    target_n_clusters = int(df_metrics.loc[df_metrics['mesa_score'].idxmax()]['n_clusters'])
+    
+    df_winner = df[df['n_clusters'] == target_n_clusters]
+    df_flat_top = df_winner[df_winner['modularity'] >= df_winner['modularity'].median()].copy()
+    
+    # Calculate the theoretical centroid
+    theoretical_k = df_flat_top['k_neighbors'].mean()
+    theoretical_r = df_flat_top['resolution_r'].mean()
+    
+    k_min, k_max = df['k_neighbors'].min(), df['k_neighbors'].max()
+    r_min, r_max = df['resolution_r'].min(), df['resolution_r'].max()
+    
+    # Snap to the closest physical coordinate using Pythagorean distance
+    df_flat_top['dist'] = df_flat_top.apply(
+        lambda row: np.sqrt(
+            ((row['k_neighbors'] - theoretical_k) / (k_max - k_min + 1e-9))**2 + 
+            ((row['resolution_r'] - theoretical_r) / (r_max - r_min + 1e-9))**2
+        ), axis=1
+    )
+    
+    anchor = df_flat_top.loc[df_flat_top['dist'].idxmin()]
+    final_k = int(anchor['k_neighbors'])
+    final_r = float(anchor['resolution_r'])
+    
+    print(f"[{label}] Pipeline Default Suggestion: k={final_k}, r={final_r:.4f}")
+    
+    del adata_raw
     gc.collect()
-    
-    return ref_res
 
+    return final_k, final_r
 
 def divide_and_save_dataset_based_on_macro_or_micro_clusters(
     file_path_used: str, 
@@ -666,130 +628,53 @@ def cast_projectable_data_on_training_data(
     del adata_project, adata_training
     gc.collect()
 
-def calculate_dynamic_gravity(file_path:str) -> int:
-    """
-    Deterministically scales the KNN n_neighbors based on the 
-    total number of cells in the manifold. 
-    
-    
-    Parameters
-    ----------
-    file_path: str
-      of the adata whose n_cells to check.
-        
-    Returns
-    -------
-    int
-        The optimal n_neighbors (k) parameter.
-    """
-    adata_temp = load_evidence(file_path)
-    n_cells = adata_temp.n_obs
-    del adata_temp
-    if n_cells < 1000:
-        return 30
-    elif n_cells < 1500:
-        return 20
-    elif n_cells < 3000:
-        return 30
-    elif n_cells < 15000:
-        return 40
-    else:
-        return 50
 
+# =============================================================================
+# PHASE II: STREAMLIT API ENDPOINTS (The Severed Orchestrator)
+# =============================================================================
 
-def orchestrator_A(h5ad_path: str, save_folder_path: str, cell_cycle_genes_path: str) -> dict:
+def execute_macro_sweep(h5ad_path: str, save_folder_path: str) -> dict:
     """
-    Master orchestrator for the Training Matrix processing sequence.
-
-    Parameters
-    ----------
-    h5ad_path : str
-        Path to the primary QC'd AnnData file.
-    save_folder_path : str
-        Directory to export processed matrices and logs.
-    cell_cycle_genes_path : str
-        Path to the cell cycle marker text file.
-
-    Returns
-    -------
-    dict
-        State dictionary containing all operational paths and topology keys.
+    Step 1: Splits data, prepares variance, and runs the topographical audit.
+    Generates the SVG Map and HALTS. Returns state to Streamlit.
     """
+    sc.settings.figdir = str(plt_fig_dir)
     print("\n===========================================================")
-    print(" INITIATING ORCHESTRATOR A: TRAINING SEQUENCE")
+    print(" INITIATING PHASE II - STEP 1: THERMODYNAMIC SWEEP")
     print("===========================================================")
     
     file_path_dict = random_split_data(h5ad_path, save_folder_path)
     training_file_path = file_path_dict['training_file']
     
-    
     npr_hvg_pca_recal(training_file_path, 'training_file')
     
-    macro_neighbors_numbers = calculate_dynamic_gravity(training_file_path)
-    print(f"\n[PHYSICS] Setting Macro neighbors numbers (k) to {macro_neighbors_numbers}")
-    macro_res = stability_audit(training_file_path,'macro',0.01,0.21,0.003,macro_neighbors_numbers,n_pcs=10)
-    cell_cycle_check(training_file_path, cell_cycle_genes_path, n_neighbors=macro_neighbors_numbers, n_pcs=10, leiden_res=macro_res,file_save_key= 'training')
-    macro_leiden_key, macro_neighbors_key = knn_umap_leiden(
-        training_file_path, n_neighbors=macro_neighbors_numbers, n_pcs=10, leiden_res=macro_res, key_name='macro'
+    # Generate rigorous float grids
+    macro_k_grid = np.arange(5, 105, 5).tolist()
+    macro_r_grid = np.round(np.arange(0.01, 0.21, 0.01), 2).tolist()
+    
+    # Run the audit (This generates and saves the SVG for Streamlit)
+    suggested_k, suggested_r = topographical_mesa_audit(
+        filepath=training_file_path, 
+        key_name='macro', 
+        k_grid=macro_k_grid, 
+        r_grid=macro_r_grid, 
+        plt_fig_dir=str(plt_fig_dir), 
+        n_pcs=10
     )
     
-    micro_filepaths_dict = divide_and_save_dataset_based_on_macro_or_micro_clusters(
-        training_file_path, macro_leiden_key
-    )
+    print("\n[SYSTEM] Sweep Complete. Halting backend. Awaiting human override...")
     
-    micro_leiden_key_dict = {}
-    micro_neighbors_key_dict = {}
-    
-    for keys, filepath in micro_filepaths_dict.items():
-        if 'Terminal_State' in keys:
-            continue
-            
-        npr_hvg_pca_recal(filepath, keys)
-        micro_n_neighbors = calculate_dynamic_gravity(file_path=filepath)
-        ref_res = stability_audit(filepath, keys,0.1,2.1,0.03,micro_n_neighbors,n_pcs=10)
-        
-        if ref_res is not None:
-            cell_cycle_check(filepath, cell_cycle_genes_path, n_neighbors=micro_n_neighbors,
-                              n_pcs=10, leiden_res=ref_res, file_save_key=keys)
-            m_leiden, m_neighbors = knn_umap_leiden(
-                filepath, n_neighbors=micro_n_neighbors, n_pcs=10, leiden_res=ref_res, key_name=f'{keys}_micro'
-            )
-            if m_leiden is not None:
-                micro_leiden_key_dict[keys] = m_leiden
-                micro_neighbors_key_dict[keys] = m_neighbors
-        else:
-            print(f"[WARNING] Sub-clustering failed to stabilize for {keys}.")
-
     return {
-        'main_pca_artifact_path': h5ad_path,
-        'writing_files_folder_path': save_folder_path,
-        'file_path_dictionary_from_the_split_step': file_path_dict,
-        'training_macro_leiden_key': macro_leiden_key,
-        'training_macro_neighbors_key': macro_neighbors_key,
-        'training_micro_file_path_dictionary': micro_filepaths_dict,
-        'training_micro_leiden_key_dictionary': micro_leiden_key_dict,
-        'training_micro_neighbors_key_dictionary': micro_neighbors_key_dict
+        'training_file_path': training_file_path,
+        'file_path_dict': file_path_dict,
+        'suggested_k': suggested_k,
+        'suggested_r': suggested_r
     }
-
 
 def orchestrator_B(dict_A: dict) -> dict:
     """
-    Master orchestrator for the Projection Sequence.
-
-    Parameters
-    ----------
-    dict_A : dict
-        The state dictionary generated by Orchestrator A.
-
-    Returns
-    -------
-    dict
-        State dictionary containing validation projection paths and keys.
+    Internal Phase IV function: Projects micro-states back onto training data.
     """
-    print("\n===========================================================")
-    print(" INITIATING ORCHESTRATOR B: PROJECTION SEQUENCE")
-    print("===========================================================")
-    
     macro_project_path = dict_A['file_path_dictionary_from_the_split_step']['projectable_file']
     macro_training_path = dict_A['file_path_dictionary_from_the_split_step']['training_file']
     macro_neighbors_key = dict_A['training_macro_neighbors_key']
@@ -819,7 +704,6 @@ def orchestrator_B(dict_A: dict) -> dict:
         if target_key_training is not None:
             training_micro_filepath = training_micro_file_dict[target_key_training]
             if 'Terminal_State' in target_key_training:
-                print(f"[INFO] Bypassing micro-cast for Terminal State: {root_key}")
                 continue
                 
             p_leiden = dict_A['training_micro_leiden_key_dictionary'].get(target_key_training)
@@ -831,9 +715,7 @@ def orchestrator_B(dict_A: dict) -> dict:
                 )
                 project_micro_leiden_dict[keys_projected] = p_leiden
                 project_micro_neighbors_dict[keys_projected] = p_neighbors
-        else:
-            print(f"[WARNING] Projected cluster {keys_projected} not found in training set. Discarding.")
-
+                
     return {
         'macro_adata_project_file_path': macro_project_path,
         'macro_neighbors_key_training': macro_neighbors_key,
@@ -844,28 +726,103 @@ def orchestrator_B(dict_A: dict) -> dict:
     }
 
 
-
-def main():
-    # Relative paths
-    sc.settings.figdir = "./results/figures/p04_clustering"
-    os.makedirs(sc.settings.figdir, exist_ok=True)
+def lock_macro_and_extract_micro_queue(
+    training_file_path: str, 
+    human_k: int, 
+    human_r: float, 
+    cell_cycle_genes_path: str
+) -> dict:
+    """
+    Step 2: Locks the Macro-state with human coordinates and fractures the matrix.
+    Returns the queue of isolated micro-states for the UI to process iteratively.
+    """
+    sc.settings.figdir = str(plt_fig_dir)
+    print(f"\n[SYSTEM] Locking Macro-State at k={human_k}, r={human_r}")
     
-    h5ad_path = './data/objects/pbmc3k_qc.h5ad'
-    save_folder_path = './data/objects'
-    os.makedirs(os.path.dirname(save_folder_path), exist_ok=True)
-
-    cell_cycle_genes_path = './data/regev_lab_cell_cycle_genes.txt'
+    cell_cycle_check(
+        training_file_path, cell_cycle_genes_path, n_neighbors=human_k, 
+        n_pcs=10, leiden_res=human_r, file_save_key='training'
+    )
     
-    dict_A = orchestrator_A(h5ad_path, save_folder_path, cell_cycle_genes_path)
+    macro_leiden_key, macro_neighbors_key = knn_umap_leiden(
+        training_file_path, n_neighbors=human_k, n_pcs=10, 
+        leiden_res=human_r, key_name='macro'
+    )
+    
+    micro_filepaths_dict = divide_and_save_dataset_based_on_macro_or_micro_clusters(
+        training_file_path, macro_leiden_key
+    )
+    
+    return {
+        'macro_leiden_key': macro_leiden_key,
+        'macro_neighbors_key': macro_neighbors_key,
+        'micro_filepaths_dict': micro_filepaths_dict
+    }
+
+def execute_micro_sweep(filepath: str, micro_key: str, plt_fig_dir: str) -> dict:
+    """
+    Step 3: Audits a specific micro-state and generates its SVG map.
+    """
+    sc.settings.figdir = str(plt_fig_dir)
+    print(f"\n[SYSTEM] Sweeping Micro-State: {micro_key}")
+    npr_hvg_pca_recal(filepath, micro_key)
+    
+    micro_k_grid = np.arange(5, 105, 5).tolist()
+    micro_r_grid = np.round(np.arange(0.05, 2.10, 0.05), 2).tolist()
+    
+    suggested_k, suggested_r = topographical_mesa_audit(
+        filepath=filepath, key_name=micro_key, k_grid=micro_k_grid, 
+        r_grid=micro_r_grid, plt_fig_dir=plt_fig_dir, n_pcs=10
+    )
+    
+    return {'suggested_k': suggested_k, 'suggested_r': suggested_r}
+
+def lock_micro_state(
+    filepath: str, micro_key: str, human_k: int, human_r: float, cell_cycle_genes_path: str
+) -> dict:
+    """
+    Step 4: Applies human coordinates to a specific micro-state.
+    """
+    sc.settings.figdir = str(plt_fig_dir)
+    print(f"\n[SYSTEM] Locking Micro-State {micro_key} at k={human_k}, r={human_r}")
+    cell_cycle_check(
+        filepath, cell_cycle_genes_path, n_neighbors=human_k,
+        n_pcs=10, leiden_res=human_r, file_save_key=micro_key
+    )
+    
+    m_leiden, m_neighbors = knn_umap_leiden(
+        filepath, n_neighbors=human_k, n_pcs=10, 
+        leiden_res=human_r, key_name=f'{micro_key}_micro'
+    )
+    
+    return {'m_leiden': m_leiden, 'm_neighbors': m_neighbors}
+
+def seal_phase_II_pipeline(
+    h5ad_path: str, save_folder_path: str, file_path_dict: dict,
+    macro_leiden_key: str, macro_neighbors_key: str,
+    micro_filepaths_dict: dict, micro_leiden_dict: dict, micro_neighbors_dict: dict
+) -> None:
+    """
+    Step 5: Compiles all human-approved dictionaries and executes Orchestrator B projection.
+    """
+    print("\n[SYSTEM] Sealing Pipeline. Recombining topologies...")
+    dict_A = {
+        'main_pca_artifact_path': h5ad_path,
+        'writing_files_folder_path': save_folder_path,
+        'file_path_dictionary_from_the_split_step': file_path_dict,
+        'training_macro_leiden_key': macro_leiden_key,
+        'training_macro_neighbors_key': macro_neighbors_key,
+        'training_micro_file_path_dictionary': micro_filepaths_dict,
+        'training_micro_leiden_key_dictionary': micro_leiden_dict,
+        'training_micro_neighbors_key_dictionary': micro_neighbors_dict
+    }
+    
     dict_B = orchestrator_B(dict_A)
     
-    with open(f'{save_folder_path}/Dictionary_of_returns_from_orch_A.json', 'w') as json_file:
-        json.dump(dict_A, json_file, indent=4)
+    import json
+    with open(f'{save_folder_path}/Dictionary_of_returns_from_orch_A.json', 'w') as f:
+        json.dump(dict_A, f, indent=4)
+    with open(f'{save_folder_path}/Dictionary_of_returns_from_orch_B.json', 'w') as f:
+        json.dump(dict_B, f, indent=4)
         
-    with open(f'{save_folder_path}/Dictionary_of_returns_from_orch_B.json', 'w') as json_file:
-        json.dump(dict_B, json_file, indent=4)
-        
-    print("\n[SUCCESS] PHASE II COMPLETE. READY FOR PHASE III.")
-
-if __name__ == '__main__':
-    main()
+    print("[SUCCESS] Phase II Pipeline Sealed. Control returned to UI.")
