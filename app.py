@@ -230,6 +230,11 @@ def main() -> None:
     # TAB 1: THE CONTROL ROOM
     # =========================================================================
     with tab_control_room:
+        
+        if st.session_state.get("purge_success", False):
+            st.success("Workspace purged. 5-Sigma sterile environment achieved.")
+            st.session_state.purge_success = False
+        
         st.markdown("### 1. The Entropy Purge")
         st.write("Wipe existing tensors and figures to prepare the physical container for new data ingestion.")
         
@@ -238,7 +243,8 @@ def main() -> None:
             directories_to_clean = [
                 "data/raw/pbmc3k_filtered_gene_bc_matrices/hg19", 
                 "data/objects", 
-                "results/figures"
+                "results/figures",
+                "cache"
             ]
             for directory in directories_to_clean:
                 if os.path.exists(directory):
@@ -262,10 +268,10 @@ def main() -> None:
             # 3. Purge the Session State Dictionary (Eradicate ghost variables)
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
-                
+            st.session_state.purge_success = True    
             # 4. Reboot the UI to reflect the sterile state
             st.rerun()
-            st.success("Workspace purged. 5-Sigma sterile environment achieved.")
+            
         st.divider()
 
         st.markdown("### 2. The Ingestion Protocol")
