@@ -8,6 +8,7 @@ setup:
 
 clean:
 	@echo "Vaporizing Exhaust and Artifacts..."
+	rm -rf cache/*
 	rm -rf .conda
 	rm -rf data/objects/*
 	rm -rf results/figures/*
