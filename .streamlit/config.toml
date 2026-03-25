@@ -1,0 +1,8 @@
+[server]
+# Expands the thermodynamic upload limit from the default 200MB to 1024MB (1GB)
+maxUploadSize = 1024
+
+[theme]
+# (Optional) Enforces a dark-mode, high-contrast visual telemetry environment
+base="dark"
+primaryColor="#00ff00"
