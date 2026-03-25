@@ -234,6 +234,7 @@ def main() -> None:
         st.write("Wipe existing tensors and figures to prepare the physical container for new data ingestion.")
         
         if st.button("Execute 'make clean' / Purge Workspace", type="primary"):
+            # 1. Annihilate the physical files on disk
             directories_to_clean = [
                 "data/raw/pbmc3k_filtered_gene_bc_matrices/hg19", 
                 "data/objects", 
@@ -253,6 +254,17 @@ def main() -> None:
             ]
             for directory in directories_to_rebuild:
                 os.makedirs(directory, exist_ok=True)
+            
+            # 2. Annihilate the Streamlit RAM Cache (Flush the loaded .h5ad tensors)
+            st.cache_resource.clear()
+            st.cache_data.clear()
+            
+            # 3. Purge the Session State Dictionary (Eradicate ghost variables)
+            for key in list(st.session_state.keys()):
+                del st.session_state[key]
+                
+            # 4. Reboot the UI to reflect the sterile state
+            st.rerun()
             st.success("Workspace purged. 5-Sigma sterile environment achieved.")
         st.divider()
 
