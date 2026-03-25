@@ -9,7 +9,7 @@ sdk_version: 1.42.0
 app_file: app.py
 pinned: false
 ---
-```markdown
+
 # PBMC3k-reproducible: 5-Sigma Cybernetic Clustering Engine
 
 **Status:** EXECUTION MODE  
@@ -124,5 +124,4 @@ streamlit run app.py
 ├── requirements.txt                    # Strict pinned dependencies for Hugging Face deployment
 ├── LICENSE                             # MIT License
 └── README.md                           # The Forensic Log: Project Mission and Constraints
-```
 ```
