@@ -1,4 +1,3 @@
-```markdown
 ---
 title: PBMC3k Single Donor Healthy
 emoji: 🧬
@@ -10,7 +9,7 @@ sdk_version: 1.42.0
 app_file: app.py
 pinned: false
 ---
-
+```markdown
 # PBMC3k-reproducible: 5-Sigma Cybernetic Clustering Engine
 
 **Status:** EXECUTION MODE  
