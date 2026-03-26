@@ -176,21 +176,16 @@ def main() -> None:
     """
     st.title("🧬 PBMC Human-in-the-Loop Pipeline")
     
-    # 1. Establish the RAM Vault
     initialize_session_vault()
     
-    # 2. Ingest the Master Map (The Orchestrator B Output)
     master_map = load_json_ledger(DICT_B_PATH)
     
-        
-    # Synchronize physical ledgers with RAM on initial load only
     if master_map:
         if not st.session_state.annotations:
             st.session_state.annotations = load_json_ledger(ANNOTATION_PATH)
         if not st.session_state.ontologies:
             st.session_state.ontologies = load_json_ledger(ONTOLOGY_PATH)
 
-    # 3. Sidebar Navigation Architecture
     st.sidebar.header("Navigation")
     active_path = None
     active_leiden = None
@@ -213,8 +208,6 @@ def main() -> None:
                 active_leiden = micro_leiden_dict.get(selected_micro)
                 active_label_key = active_leiden
                 
-                # Absolute logical inheritance for Terminal States
-                # Matches the exact string manipulation physics established in P06
                 if active_leiden is None:
                     st.sidebar.warning("Terminal State Detected. Inheriting parent topology logic.")
                     clean_key = selected_micro.replace('_Terminal_State', '')
@@ -223,7 +216,6 @@ def main() -> None:
     else:
         st.sidebar.info("Workspace sterile. Awaiting ingestion from Control Room.")
 
-    # 4. The Tab Architecture
     tab_control_room,tab_annotate, tab_telemetry = st.tabs(["🎛️ Control Room (Execution)","🧬 Annotation Engine", "📊 Visual Telemetry"])
 
     # =========================================================================
@@ -239,7 +231,7 @@ def main() -> None:
         st.write("Wipe existing tensors and figures to prepare the physical container for new data ingestion.")
         
         if st.button("Execute 'make clean' / Purge Workspace", type="primary"):
-            # 1. Annihilate the physical files on disk
+
             directories_to_clean = [
                 "data/raw/pbmc3k_filtered_gene_bc_matrices/hg19", 
                 "data/objects", 
@@ -261,15 +253,12 @@ def main() -> None:
             for directory in directories_to_rebuild:
                 os.makedirs(directory, exist_ok=True)
             
-            # 2. Annihilate the Streamlit RAM Cache (Flush the loaded .h5ad tensors)
             st.cache_resource.clear()
             st.cache_data.clear()
             
-            # 3. Purge the Session State Dictionary (Eradicate ghost variables)
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
             st.session_state.purge_success = True    
-            # 4. Reboot the UI to reflect the sterile state
             st.rerun()
             
         st.divider()
@@ -433,12 +422,12 @@ def main() -> None:
                                 micro_result = P04_clustering.lock_micro_state(
                                     filepath, current_micro, chosen_k, chosen_r, './data/regev_lab_cell_cycle_genes.txt'
                                 )
-                                # Save the dictionaries
+                                
                                 if micro_result['m_leiden']:
                                     st.session_state.final_micro_leiden_dict[current_micro] = micro_result['m_leiden']
                                     st.session_state.final_micro_neighbors_dict[current_micro] = micro_result['m_neighbors']
                                 
-                                # Pop the completed item from the queue and reset the sweep state for the next one
+                                
                                 st.session_state.micro_queue.pop(0)
                                 st.session_state.current_micro_swept = False
                                 st.rerun()
@@ -593,11 +582,10 @@ def main() -> None:
                         if st.button("🚀 Execute P06 & Generate ML Artifact", type="secondary"):
                             with st.spinner("Injecting topologies and recombining global matrix..."):
                                 try:
-                                    # Native Python Execution via the Module Wormhole
+                                    
                                     P06_annotation.main()
                                     st.success("Matrix successfully recombined and sealed!")
                                         
-                                    # Locate the generated artifact to offer a download
                                     ml_ready_path = "./data/objects/pbmc3k_qc_ML_Ready.h5ad"
                                     if op.exists(ml_ready_path):
                                         with open(ml_ready_path, "rb") as file:
