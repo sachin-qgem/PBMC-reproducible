@@ -418,7 +418,7 @@ def main() -> None:
                             chosen_r = st.number_input("Optimal r (Resolution)", value=float(st.session_state.current_micro_r), min_value=0.1, max_value=2.0, step=0.1)
                             
                         if st.form_submit_button(f"Lock `{current_micro}` & Proceed to Next", type="primary"):
-                            with st.spinner(f"Locking {current_micro} and calculating Jaccard Stability..."):
+                            with st.spinner(f"Locking {current_micro} and calculating Jaccard Stability(view in terminal logs)..."):
                                 micro_result = P04_clustering.lock_micro_state(
                                     filepath, current_micro, chosen_k, chosen_r, './data/regev_lab_cell_cycle_genes.txt'
                                 )
