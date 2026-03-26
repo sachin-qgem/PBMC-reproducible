@@ -614,6 +614,21 @@ def main() -> None:
                         st.error(f"[ERROR] Required observation column '{cluster_col}' missing from matrix.")
                 else:
                     st.error(f"[ERROR] Failed to load matrix at physical path: {active_path}")
-                    
+
+            st.markdown("---")
+            st.markdown("### ⚠️ Engine Diagnostics & Memory Purge")
+            st.markdown("Execute this if the UI caches phantom annotations or ghost topologies from a previous run.") 
+            if st.button("🔥 PURGE ANNOTATION MEMORY (HARD RESET)", type="primary"):
+                keys_to_destroy = [
+                    key for key in st.session_state.keys() 
+                    if "annotation" in key.lower() or "ontolog" in key.lower() or "dict" in key.lower()
+                ]
+                for key in keys_to_destroy:
+                    del st.session_state[key]
+                st.cache_data.clear()
+                st.cache_resource.clear()
+                import gc
+                gc.collect()
+                st.rerun()       
 if __name__ == "__main__":
     main()
