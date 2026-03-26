@@ -743,6 +743,81 @@ def execute_macro_sweep(h5ad_path: str, save_folder_path: str) -> dict:
         'suggested_r': suggested_r
     }
 
+
+def lock_macro_and_extract_micro_queue(
+    training_file_path: str, 
+    human_k: int, 
+    human_r: float, 
+    cell_cycle_genes_path: str
+) -> dict:
+    """
+    Step 2: Locks the Macro-state with human coordinates and fractures the matrix.
+    Returns the queue of isolated micro-states for the UI to process iteratively.
+    """
+    human_r = round(human_r,2)
+    sc.settings.figdir = str(plt_fig_dir)
+
+    print(f"\n[INFO] Locking Macro-State at k={human_k}, r={human_r}")
+    
+    cell_cycle_check(
+        training_file_path, cell_cycle_genes_path, n_neighbors=human_k, 
+        n_pcs=10, leiden_res=human_r, file_save_key='training'
+    )
+    
+    macro_leiden_key, macro_neighbors_key = knn_umap_leiden(
+        training_file_path, n_neighbors=human_k, n_pcs=10, 
+        leiden_res=human_r, key_name='macro'
+    )
+    
+    micro_filepaths_dict = divide_and_save_dataset_based_on_macro_or_micro_clusters(
+        training_file_path, macro_leiden_key
+    )
+    
+    return {
+        'macro_leiden_key': macro_leiden_key,
+        'macro_neighbors_key': macro_neighbors_key,
+        'micro_filepaths_dict': micro_filepaths_dict
+    }
+
+def execute_micro_sweep(filepath: str, micro_key: str, plt_fig_dir: str) -> dict:
+    """
+    Step 3: Audits a specific micro-state and generates its SVG map.
+    """
+    sc.settings.figdir = str(plt_fig_dir)
+    print(f"\n[SYSTEM] Sweeping Micro-State: {micro_key}")
+    npr_hvg_pca_recal(filepath, micro_key)
+    
+    micro_k_grid = np.arange(5, 105, 5).tolist()
+    micro_r_grid = np.round(np.arange(0.1, 2.10, 0.2), 2).tolist()
+    
+    suggested_k, suggested_r = topographical_mesa_audit(
+        filepath=filepath, key_name=micro_key, k_grid=micro_k_grid, 
+        r_grid=micro_r_grid, plt_fig_dir=plt_fig_dir, n_pcs=10
+    )
+    suggested_r = round(suggested_r,2)
+    return {'suggested_k': suggested_k, 'suggested_r': suggested_r}
+
+def lock_micro_state(
+    filepath: str, micro_key: str, human_k: int, human_r: float, cell_cycle_genes_path: str
+) -> dict:
+    """
+    Step 4: Applies human coordinates to a specific micro-state.
+    """
+    human_r = round(human_r,2)
+    sc.settings.figdir = str(plt_fig_dir)
+    print(f"\n[SYSTEM] Locking Micro-State {micro_key} at k={human_k}, r={human_r}")
+    cell_cycle_check(
+        filepath, cell_cycle_genes_path, n_neighbors=human_k,
+        n_pcs=10, leiden_res=human_r, file_save_key=micro_key
+    )
+    
+    m_leiden, m_neighbors = knn_umap_leiden(
+        filepath, n_neighbors=human_k, n_pcs=10, 
+        leiden_res=human_r, key_name=f'{micro_key}_micro'
+    )
+    
+    return {'m_leiden': m_leiden, 'm_neighbors': m_neighbors}
+
 def orchestrator_B(dict_A: dict) -> dict:
     """
     Internal Phase IV function: Projects micro-states back onto training data.
@@ -796,78 +871,6 @@ def orchestrator_B(dict_A: dict) -> dict:
         'projected_micro_leiden_key_dictionary': project_micro_leiden_dict,
         'projected_micro_neighbors_key_dictionary': project_micro_neighbors_dict
     }
-
-
-def lock_macro_and_extract_micro_queue(
-    training_file_path: str, 
-    human_k: int, 
-    human_r: float, 
-    cell_cycle_genes_path: str
-) -> dict:
-    """
-    Step 2: Locks the Macro-state with human coordinates and fractures the matrix.
-    Returns the queue of isolated micro-states for the UI to process iteratively.
-    """
-    sc.settings.figdir = str(plt_fig_dir)
-    print(f"\n[INFO] Locking Macro-State at k={human_k}, r={human_r}")
-    
-    cell_cycle_check(
-        training_file_path, cell_cycle_genes_path, n_neighbors=human_k, 
-        n_pcs=10, leiden_res=human_r, file_save_key='training'
-    )
-    
-    macro_leiden_key, macro_neighbors_key = knn_umap_leiden(
-        training_file_path, n_neighbors=human_k, n_pcs=10, 
-        leiden_res=human_r, key_name='macro'
-    )
-    
-    micro_filepaths_dict = divide_and_save_dataset_based_on_macro_or_micro_clusters(
-        training_file_path, macro_leiden_key
-    )
-    
-    return {
-        'macro_leiden_key': macro_leiden_key,
-        'macro_neighbors_key': macro_neighbors_key,
-        'micro_filepaths_dict': micro_filepaths_dict
-    }
-
-def execute_micro_sweep(filepath: str, micro_key: str, plt_fig_dir: str) -> dict:
-    """
-    Step 3: Audits a specific micro-state and generates its SVG map.
-    """
-    sc.settings.figdir = str(plt_fig_dir)
-    print(f"\n[SYSTEM] Sweeping Micro-State: {micro_key}")
-    npr_hvg_pca_recal(filepath, micro_key)
-    
-    micro_k_grid = np.arange(5, 105, 5).tolist()
-    micro_r_grid = np.round(np.arange(0.1, 2.10, 0.2), 2).tolist()
-    
-    suggested_k, suggested_r = topographical_mesa_audit(
-        filepath=filepath, key_name=micro_key, k_grid=micro_k_grid, 
-        r_grid=micro_r_grid, plt_fig_dir=plt_fig_dir, n_pcs=10
-    )
-    
-    return {'suggested_k': suggested_k, 'suggested_r': suggested_r}
-
-def lock_micro_state(
-    filepath: str, micro_key: str, human_k: int, human_r: float, cell_cycle_genes_path: str
-) -> dict:
-    """
-    Step 4: Applies human coordinates to a specific micro-state.
-    """
-    sc.settings.figdir = str(plt_fig_dir)
-    print(f"\n[SYSTEM] Locking Micro-State {micro_key} at k={human_k}, r={human_r}")
-    cell_cycle_check(
-        filepath, cell_cycle_genes_path, n_neighbors=human_k,
-        n_pcs=10, leiden_res=human_r, file_save_key=micro_key
-    )
-    
-    m_leiden, m_neighbors = knn_umap_leiden(
-        filepath, n_neighbors=human_k, n_pcs=10, 
-        leiden_res=human_r, key_name=f'{micro_key}_micro'
-    )
-    
-    return {'m_leiden': m_leiden, 'm_neighbors': m_neighbors}
 
 def seal_phase_II_pipeline(
     h5ad_path: str, save_folder_path: str, file_path_dict: dict,
