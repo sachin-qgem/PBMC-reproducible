@@ -199,7 +199,7 @@ def knn_umap_leiden(
     neighbors_key = None
     umap_key_added = None
     
-    if adata.n_obs > 250:
+    if adata.n_obs > n_neighbors +2:
         neighbors_key = f"{key_name}_neighbors"
         umap_key_added = f"{key_name}_umap"
         leiden_key = f"{key_name}_leiden"
@@ -232,7 +232,7 @@ def knn_umap_leiden(
         unique_clusters = original_labels.unique()
         jaccard_ledger = {cluster: [] for cluster in unique_clusters}
         
-        # 5-Sigma Physical Law: Scaffolding must scale linearly with mass to maintain density
+        # Scale knn parameter linearly with subsample fraction to maintain graph density
         boot_k = max(2, int(n_neighbors * subsample_fraction))
         
         for i in range(n_iterations):
@@ -257,7 +257,7 @@ def knn_umap_leiden(
             new_labels = adata_sub.obs['boot_leiden'].astype(str)
             
             for orig_cluster in unique_clusters:
-                # 5-Sigma Data Engineering: .values prevents silent Pandas index misalignment
+                # Extract numpy array via .values to prevent Pandas index misalignment during masking
                 mask = (original_labels[surviving_indices] == orig_cluster).values
                 orig_cells_in_sub = adata_sub.obs_names[mask]
                 
@@ -356,7 +356,7 @@ def topographical_mesa_audit(
             map_dict = {l: i for i, l in enumerate(labels.unique())}
             membership = [map_dict[l] for l in labels]
             
-            # The 5-Sigma Truth: Pure Modularity (Q) without Entropy corruption
+            # Calculate the structural modularity (Q) of the resulting partition
             modularity_val = ig.VertexClustering(g, membership=membership).modularity
             
             dir1_ledger.append({
@@ -467,9 +467,52 @@ def topographical_mesa_audit(
 
     return final_k, final_r
 
+def is_thermodynamic_terminal_state(adata: ad.AnnData, min_cells: int = 100, elbow_threshold: float = 2.0) -> bool:
+    """
+    Audits the PCA variance geometry to determine if a cluster is a homogenous 
+    biological state (an arc) or contains structural subpopulations (an elbow).
+    """
+    # Ensure minimum cell count required for reliable PCA computation
+    if adata.n_obs < min_cells:
+        return True
+
+    # 2. Extract Local Structure
+    # We must calculate local Highly Variable Genes to expose hidden sub-populations.
+    # We use a try-except block to catch matrices that are too sparse for Pearson Residuals.
+    n_comps = min(100, adata.n_obs - 1)
+    if 'pca' not in adata.uns or 'variance_ratio' not in adata.uns['pca']:
+        try:
+            sc.experimental.pp.highly_variable_genes(
+                adata, theta=100.0, n_top_genes=2000, flavor='pearson_residuals', subset=False
+            )
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", category=RuntimeWarning)
+                sc.experimental.pp.normalize_pearson_residuals(adata, theta=100.0)
+                sc.pp.pca(adata, n_comps=n_comps, zero_center=True, svd_solver='arpack', mask_var='highly_variable')
+        except Exception:
+            # If the matrix is too sparse/homogeneous to even compute residuals, it is dead noise.
+            return True
+
+    variance_ratios = adata.uns['pca']['variance_ratio']
+    
+    if len(variance_ratios) < 10:
+        return True # Not enough components to evaluate a structural cliff
+
+    # 3. Calculate the Structural Energy Ratio
+    pc1_energy = variance_ratios[0]
+    pc_baseline_energy = np.mean(variance_ratios[4:9]) 
+    structural_ratio = pc1_energy / pc_baseline_energy
+
+    # Evaluate structural ratio against the threshold
+    if structural_ratio < elbow_threshold:
+        return True  # Terminal State Confirmed: Isotropic Arc
+    
+    return False # Structural cliff detected
+
 def divide_and_save_dataset_based_on_macro_or_micro_clusters(
     file_path_used: str, 
-    leiden_key_as_cluster_column_name: str
+    leiden_key_as_cluster_column_name: str,
+    enforce_thermodynamic_audit: bool = True
 ) -> dict:
     """
     Subsets the AnnData object by cluster labels and saves the independent 
@@ -499,11 +542,15 @@ def divide_and_save_dataset_based_on_macro_or_micro_clusters(
     for cluster_id, barcodes in grouped_barcodes.items():
         lineage_key = f"{leiden_key_as_cluster_column_name}_{cluster_id}"
         adata_subset = adata[barcodes].copy()
-        
-        if adata_subset.n_obs <= 250:
-            print(f"[INFO] Cluster {cluster_id} (N={adata_subset.n_obs}) flagged as Terminal_State.")
-            lineage_key = f"{lineage_key}_Terminal_State"
-            
+        if  enforce_thermodynamic_audit:
+            if is_thermodynamic_terminal_state(adata_subset):
+                print(f" [INFO] ⚠️ TERMINAL STATE LOCKED: Cluster {cluster_id} (N={adata_subset.n_obs}). Isotropic variance detected.")
+                print(" [SUGGESTION] If a continuous transition is suspected, consider Trajectory Inference methods.")
+                lineage_key = f"{lineage_key}_Terminal_State"
+            else:
+                print(f" [INFO] Cluster {cluster_id} (N={adata_subset.n_obs}): Structural elbow detected. Approved for Topographical Sweep.")
+        else:
+            print(f" [INFO] Projection Protocol: Fracturing Cluster {cluster_id} without thermodynamic audit.")   
         new_filename = f"{base_name}_{lineage_key}.h5ad"
         new_filepath_obj = directory / new_filename
         
@@ -538,7 +585,8 @@ def npr_hvg_pca_recal(filepath: str, keys: str) -> None:
     adata = load_evidence(filepath)
     adata.X = adata.layers['counts'].copy()
     
-    if adata.n_obs > 250:
+    if adata.n_obs > 50:
+        n_comps = min(100,adata.n_obs-1)
         sc.experimental.pp.highly_variable_genes(
             adata, theta=100.0, n_top_genes=2500, flavor='pearson_residuals', subset=False
         )
@@ -547,7 +595,7 @@ def npr_hvg_pca_recal(filepath: str, keys: str) -> None:
             warnings.simplefilter("ignore", category=RuntimeWarning)
         sc.experimental.pp.normalize_pearson_residuals(adata, theta=100.0)
         sc.pp.pca(
-            adata, n_comps=100, zero_center=True, svd_solver='arpack', mask_var='highly_variable'
+            adata, n_comps=n_comps, zero_center=True, svd_solver='arpack', mask_var='highly_variable'
         )
         
         sc.pl.pca_variance_ratio(adata, n_pcs=100, save=f"_{keys}_.svg", show=False)
@@ -600,7 +648,7 @@ def cast_projectable_data_on_training_data(
     theta = 100.0
     variance_B = expected_B + (np.square(expected_B) / theta)
     
-    # The Thermodynamic Floor: Prevent zero-division for completely silent genes
+    # Apply variance floor to prevent zero-division during residual normalization
     variance_B = np.clip(variance_B, a_min=1e-12, a_max=None)
 
     dense_counts_B = counts_B.toarray() if hasattr(counts_B, 'toarray') else np.asarray(counts_B)
@@ -654,7 +702,7 @@ def cast_projectable_data_on_training_data(
 
 
 # =============================================================================
-# PHASE II: STREAMLIT API ENDPOINTS (The Severed Orchestrator)
+# PHASE II: Streamlit Orchestrator Endpoints
 # =============================================================================
 
 def execute_macro_sweep(h5ad_path: str, save_folder_path: str) -> dict:
@@ -709,7 +757,7 @@ def orchestrator_B(dict_A: dict) -> dict:
     )
     
     projected_micro_file_dict = divide_and_save_dataset_based_on_macro_or_micro_clusters(
-        macro_project_path, macro_leiden_key
+        macro_project_path, macro_leiden_key,enforce_thermodynamic_audit=False
     )
     
     training_micro_file_dict = dict_A['training_micro_file_path_dictionary']
@@ -761,7 +809,7 @@ def lock_macro_and_extract_micro_queue(
     Returns the queue of isolated micro-states for the UI to process iteratively.
     """
     sc.settings.figdir = str(plt_fig_dir)
-    print(f"\n[SYSTEM] Locking Macro-State at k={human_k}, r={human_r}")
+    print(f"\n[INFO] Locking Macro-State at k={human_k}, r={human_r}")
     
     cell_cycle_check(
         training_file_path, cell_cycle_genes_path, n_neighbors=human_k, 
