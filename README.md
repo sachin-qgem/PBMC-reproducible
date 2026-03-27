@@ -10,10 +10,11 @@ app_file: app.py
 pinned: false
 ---
 
-# PBMC3k-reproducible: 5-Sigma Cybernetic Clustering Engine
+# PBMC3k-reproducible: Cybernetic Clustering and markers Engine
 
 **Status:** EXECUTION MODE  
-**Live Deployment:** [Access the Cybernetic Engine on Hugging Face Spaces](https://huggingface.co/spaces/qgem/your-space-name) *(Update link to your specific space)* **Objective:** Reproduce the PBMC3k dataset analysis from First Principles using a Human-in-the-Loop MLOps architecture.
+**Live Deployment:** [Access the Cybernetic Engine on Hugging Face Spaces](https://huggingface.co/spaces/sachin-qgemai/pbmc_single_healthy_donor)
+**Objective:** Reproduce the PBMC3k dataset analysis from First Principles using a Human-in-the-Loop architecture.
 
 **⚠️⚠️⚠️THIS IS EXPLICITLY FOR SINGLE DONOR ONLY AT THIS MOMENT. DEVELOPMENT GOING ON FOR MULTI_DONOR, BATCH INTEGRATION AND CORRECTION⚠️⚠️⚠️**
 
@@ -21,7 +22,7 @@ This is NOT a tutorial. This is a **Forensic Reconstruction**.
 We are auditing the standard pipeline to validate our Theory of Variance. We assume default automated pipelines are mathematically flawed and require rigorous computational proof at every structural node.
 ---
 
-### The 5-Sigma Architectural Upgrades
+### The Architectural Upgrades
 
 This engine abandons the "blind execution" of standard pipelines (e.g., default Seurat/Scanpy). It introduces three strict cybernetic fail-safes:
 1. **The Topographical Mesa Audit:** Phase II does not accept hardcoded Leiden resolutions. It generates a dual-pane thermodynamic contour map of Modularity ($Q$) across $k$-neighbors and $r$-resolution, forcing the human to anchor the algorithm strictly on flat biological continuous gradients (Mesas) rather than volatile mathematical phase-transitions (Cliffs).
@@ -45,32 +46,21 @@ If you wish to bypass the Hugging Face live deployment and run the cybernetic en
 
 **1. Clone the repository:**
 ```bash
-git clone <your-repo-url>
+gh repo clone sachin-qgem/PBMC3k-reproducible
 cd PBMC3k-reproducible
 ```
 
-**2. Acquire the Genesis Data:**
-Raw sequencing matrices are heavy matter and excluded from version control. 
-* Download the **Filtered gene-barcode matrices** from [10x Genomics](https://www.10xgenomics.com/resources/datasets/3-k-pbm-cs-from-a-healthy-donor-1-standard-1-1-0).
-* Extract the `hg19/` folder into the physical data lake exactly here:
-```bash
-mkdir -p data/raw/pbmc3k_filtered_gene_bc_matrices/
-# Place matrix.mtx, barcodes.tsv, and genes.tsv inside this folder
-```
 
 **3. Forge the Isolated Background Field:**
-We utilize standard Python virtual environments and strict pip dependency ledgers.
+We utilize standard Python virtual environments and strict pip dependency ledgers from makefile
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-pip install --upgrade pip
-pip install -e .           # Wires the internal logic via the pyproject.toml blueprint
+make setup
 ```
 
 **4. Ignite the Streamlit Orchestrator:**
 Do not run the backend scripts manually. Boot the visual interface.
 ```bash
-streamlit run app.py
+make run
 ```
 
 ---
