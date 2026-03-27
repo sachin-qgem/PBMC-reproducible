@@ -287,11 +287,19 @@ def main() -> None:
         with col1:
             if st.button("Run Phase I (QC & Filter)"):
                 target_dir = "data/raw/pbmc3k_filtered_gene_bc_matrices/hg19"
-                required_files = ["matrix.mtx", "barcodes.tsv", "genes.tsv"]
+                required_files = {
+                    "matrix": {"matrix.mtx", "matrix.mtx.gz"},
+                    "barcodes": {"barcodes.tsv", "barcodes.tsv.gz"},
+                    "genes": {"genes.tsv", "genes.tsv.gz", "features.tsv", "features.tsv.gz"}
+                }
                 if not os.path.exists(target_dir):
                     st.error("⛔ **Execution Blocked:** The workspace is purged. Upload files first.")
                 else:
-                    missing_files = [f for f in required_files if not os.path.exists(os.path.join(target_dir, f))]
+                    actual_files = set(os.listdir(target_dir))
+                    missing_files = []
+                    for concept, acceptable_variants in required_files.items():
+                        if not acceptable_variants.intersection(actual_files):
+                            missing_files.append(concept)
                     if missing_files:
                         st.error(f"⛔ **Execution Blocked:** Missing files: {missing_files}.")
                     else:
