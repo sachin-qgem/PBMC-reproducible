@@ -3,7 +3,7 @@
 setup:
 	@echo "Forging 3.11 Bedrock..."
 	conda env create -f environment.yml -p ./.conda || conda env update -f environment.yml -p ./.conda
-	@echo "Installing 5-Sigma Mathematical Engines..."
+	@echo "Installing Mathematical Engines..."
 	./.conda/bin/pip install -e .
 
 clean:
