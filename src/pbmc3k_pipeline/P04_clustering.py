@@ -91,30 +91,33 @@ def cell_cycle_check(
     s_genes = [x for x in s_genes if x in adata.var_names]
     g2m_genes = [x for x in g2m_genes if x in adata.var_names]
     
-    sc.pp.pca(adata)
-    sc.pp.neighbors(adata, n_neighbors=n_neighbors, n_pcs=n_pcs, method='umap')
-    sc.tl.umap(adata)
-    sc.tl.leiden(adata, resolution=leiden_res)
-    
-    sc.tl.score_genes_cell_cycle(
-        adata, s_genes=s_genes, g2m_genes=g2m_genes, layer='log1p_norm'
-    )
-    
-    save_path = f"{file_save_key}_cell_cycle.svg"
-    sc.pl.umap(
-        adata, 
-        color=['S_score', 'G2M_score', 'leiden'],
-        layer='log1p_norm', 
-        size=10.0, 
-        legend_loc='on data',
-        legend_fontsize='x-small', 
-        legend_fontweight='bold',
-        legend_fontoutline=3, 
-        save=f"_{save_path}", 
-        show=False
-    )
-    
-    print("[INFO] Cell cycle check complete. Review plots for potential regression.")
+    try:
+        sc.pp.pca(adata)
+        sc.pp.neighbors(adata, n_neighbors=n_neighbors, n_pcs=n_pcs, method='umap')
+        sc.tl.umap(adata)
+        sc.tl.leiden(adata, resolution=leiden_res)
+        
+        sc.tl.score_genes_cell_cycle(
+            adata, s_genes=s_genes, g2m_genes=g2m_genes, layer='log1p_norm'
+        )
+        
+        save_path = f"{file_save_key}_cell_cycle.svg"
+        sc.pl.umap(
+            adata, 
+            color=['S_score', 'G2M_score', 'leiden'],
+            layer='log1p_norm', 
+            size=10.0, 
+            legend_loc='on data',
+            legend_fontsize='x-small', 
+            legend_fontweight='bold',
+            legend_fontoutline=3, 
+            save=f"_{save_path}", 
+            show=False
+        )
+        
+        print("[INFO] Cell cycle check complete. Review plots for potential regression.")
+    except:
+        print("[ERROR] Acceptable list of Cell cycle Genes did not match the genes of the species Uploaded ")
     del adata
     gc.collect()
 
