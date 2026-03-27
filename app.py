@@ -224,7 +224,7 @@ def main() -> None:
     with tab_control_room:
         
         if st.session_state.get("purge_success", False):
-            st.success("Workspace purged. 5-Sigma sterile environment achieved.")
+            st.success("Workspace purged. Sterile environment achieved.")
             st.session_state.purge_success = False
         
         st.markdown("### 1. The Entropy Purge")

@@ -182,7 +182,7 @@ def execute_absence_cross_validation(
     -------
     None
     """
-    print(f"\n[AUDIT] Initiating 5-Sigma Cross-Validation for Lineage: {target_macro_id}")
+    print(f"\n[AUDIT] Initiating Cross-Validation for Lineage: {target_macro_id}")
     contamination_dict = {}
     
     # PHASE 1: The Macro Sweep
