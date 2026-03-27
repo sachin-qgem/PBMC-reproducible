@@ -503,7 +503,13 @@ def is_thermodynamic_terminal_state(adata: ad.AnnData, min_cells: int = 100, elb
 
     # 3. Calculate the Structural Energy Ratio
     pc1_energy = variance_ratios[0]
-    pc_baseline_energy = np.mean(variance_ratios[4:9]) 
+    start_noise = 10
+    end_noise = min(50, len(variance_ratios))
+    if end_noise <= start_noise:
+        pc_baseline_energy = np.median(variance_ratios[max(1, len(variance_ratios)//2):])
+    else:
+        pc_baseline_energy = np.median(variance_ratios[start_noise:end_noise])
+     
     structural_ratio = pc1_energy / pc_baseline_energy
 
     # Evaluate structural ratio against the threshold
