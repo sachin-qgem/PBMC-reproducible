@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import scanpy as sc
 import scipy.stats as sps
+import skimage
 
 # Global environment settings
 ad.settings.allow_write_nullable_strings = True
@@ -199,7 +200,45 @@ def apply_filter(adata: ad.AnnData) -> ad.AnnData:
     
     return adata_filtered
 
+def execute_doublets_purge(adata: ad.AnnData) -> ad.AnnData:
+    """
+    Algorithmically simulates and vaporizes transcriptomic doublets 
+    prior to principal component generation.
 
+    Parameters
+    ----------
+    adata : ad.AnnData
+        The structurally filtered expression matrix containing viable cells.
+
+    Returns
+    -------
+    ad.AnnData
+        The matrix strictly cleansed of multi-cell droplets.
+    """
+    print("\n[INFO] Igniting Scrublet Chimera Simulation Engine...")
+    
+    # Scanpy's native Scrublet generates thousands of synthetic doublets,
+    # projects them, and flags real cells that occupy the same topological space.
+    sc.pp.scrublet(adata)
+    
+    doublet_mask = adata.obs['predicted_doublet']
+    doublet_count = doublet_mask.sum()
+    
+    print(f"[AUDIT] Detected and flagged {doublet_count} Doublet Particles.")
+    
+    # Generate visual telemetry of the doublet score distribution
+    sc.pl.scrublet_score_distribution(
+        adata, 
+        show=False, 
+        save="_doublet_distribution.svg"
+    )
+    
+    # The Thermodynamic Vaporization
+    adata_sterile = adata[~doublet_mask].copy()
+    
+    print(f"[SUCCESS] Doublets vaporized. Sterile Dimensions: {adata_sterile.n_obs} cells x {adata_sterile.n_vars} genes.")
+    
+    return adata_sterile
 
 def orch_qc_filtering(
     mtx_path: str, 
@@ -237,6 +276,7 @@ def orch_qc_filtering(
     )
     
     adata_filtered = apply_filter(adata)
+    adata_filtered = execute_doublets_purge(adata_filtered)
     
     # Secure the raw counts layer before normalization
     adata_filtered.layers['counts'] = adata_filtered.X.copy()

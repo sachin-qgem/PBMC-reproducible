@@ -19,6 +19,7 @@ dependencies = [
     "anndata==0.12.10",
     "scanpy==1.11.5",
     "scikit-learn",
+    "scikit-image",
     "celltypist",
     "streamlit>=1.42.0",
     "protobuf<=3.20.3"
