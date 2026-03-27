@@ -397,12 +397,15 @@ def topographical_mesa_audit(
     X = pivot_modularity.columns.values
     Y = pivot_modularity.index.values
     Z = pivot_modularity.values
+    z_min = np.nanmin(pivot_modularity.values)
+    z_max = np.nanmax(pivot_modularity.values)
+    high_res_levels = np.linspace(z_min, z_max, 100)
 
     # 1. Fill the elevation with color
-    contour_filled = ax2.contourf(X, Y, Z, levels=20, cmap="viridis")
+    contour_filled = ax2.contourf(X, Y, Z, levels=high_res_levels, cmap="viridis",vmin=z_min,vmax=z_max)
     
     # 2. Draw the strict physical boundaries (The Cliffs)
-    contour_lines = ax2.contour(X, Y, Z, levels=20, colors='black', linewidths=0.8, alpha=0.7)
+    contour_lines = ax2.contour(X, Y, Z, levels=high_res_levels, colors='black', linewidths=0.8, alpha=0.7)
     ax2.clabel(contour_lines, inline=True, fontsize=9, fmt='%.2f')
 
     fig.colorbar(contour_filled, ax=ax2, label='Structural Modularity (Q)')
