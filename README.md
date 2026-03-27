@@ -27,7 +27,6 @@ We are auditing the standard pipeline to validate our Theory of Variance. We ass
 This engine abandons the "blind execution" of standard pipelines (e.g., default Seurat/Scanpy). It introduces three strict cybernetic fail-safes:
 1. **The Topographical Mesa Audit:** Phase II does not accept hardcoded Leiden resolutions. It generates a dual-pane thermodynamic contour map of Modularity ($Q$) across $k$-neighbors and $r$-resolution, forcing the human to anchor the algorithm strictly on flat biological continuous gradients (Mesas) rather than volatile mathematical phase-transitions (Cliffs).
 2. **Jaccard Sub-Sampling:** Every human coordinate lock is forensically audited by randomly deleting 20% of the cells across 20 iterations to prove cluster stability.
-3. **UUID Multi-Tenant Isolation:** The Streamlit orchestrator generates cryptographic UUIDs for every concurrent web visitor, forging isolated `/tmp/` workspaces to prevent RAM collision and global state bleed during simultaneous cloud analysis.
 ---
 
 ### Execution Constraints
