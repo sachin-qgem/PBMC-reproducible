@@ -8,6 +8,7 @@ python_version: 3.11
 sdk_version: 1.42.0
 app_file: app.py
 pinned: false
+app_port: 8501
 ---
 
 # PBMC-reproducible: Cybernetic Clustering and markers Engine
