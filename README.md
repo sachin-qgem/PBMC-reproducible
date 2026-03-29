@@ -1,5 +1,5 @@
 ---
-title: PBMC3k Single Donor Healthy
+title: PBMC Single Donor Healthy
 emoji: 🧬
 colorFrom: indigo
 colorTo: blue
@@ -10,11 +10,11 @@ app_file: app.py
 pinned: false
 ---
 
-# PBMC3k-reproducible: Cybernetic Clustering and markers Engine
+# PBMC-reproducible: Cybernetic Clustering and markers Engine
 
 **Status:** EXECUTION MODE  
 **Live Deployment:** [Access the Cybernetic Engine on Hugging Face Spaces](https://huggingface.co/spaces/sachin-qgemai/pbmc_single_healthy_donor)
-**Objective:** Reproduce the PBMC3k dataset analysis from First Principles using a Human-in-the-Loop architecture.
+**Objective:** Reproduce the PBMC dataset analysis from First Principles using a Human-in-the-Loop architecture.
 
 **⚠️⚠️⚠️THIS IS EXPLICITLY FOR SINGLE DONOR ONLY AT THIS MOMENT. DEVELOPMENT GOING ON FOR MULTI_DONOR, BATCH INTEGRATION AND CORRECTION⚠️⚠️⚠️**
 
@@ -45,8 +45,8 @@ If you wish to bypass the Hugging Face live deployment and run the cybernetic en
 
 **1. Clone the repository:**
 ```bash
-gh repo clone sachin-qgem/PBMC3k-reproducible
-cd PBMC3k-reproducible
+gh repo clone sachin-qgem/PBMC-reproducible
+cd PBMC-reproducible
 ```
 
 
@@ -76,7 +76,7 @@ make run
 ### Repository Structure
 
 ```text
-/PBMC3k-reproducible
+/PBMC-reproducible
 │
 ├── .github/workflows/                  # CI/CD Autonomous Bridge to Hugging Face
 ├── .streamlit/                         # Server configuration limits (e.g., 1GB upload max)
