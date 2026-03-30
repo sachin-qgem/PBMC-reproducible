@@ -839,7 +839,8 @@ def lock_micro_state(
         adata.obs[m_leiden] = adata.obs[m_leiden].cat.remove_unused_categories()
         adata.write_h5ad(filepath)
         print(" [SUCCESS] Micro-state purged and resealed.")
-
+    del adata
+    gc.collect()
     return {'m_leiden': m_leiden, 'm_neighbors': m_neighbors}
 
 def orchestrator_B(dict_A: dict) -> dict:
