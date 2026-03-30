@@ -34,7 +34,7 @@ We are auditing the standard pipeline to validate our learnt theory. We assume d
     - KNN, UMAP, Leiden clustering
     - Topological Mesa audit for a dynamic and informed decision for choosing optimal K-neighbors and Leiden resolution
     - divide and save dataset based on macro or micro clusters
-    - PCA variance ration elbow check and terminal state to act as filter for not doing clustering of homogenous state of a split dataset.
+    - Audits the PCA variance geometry to determine if a cluster is a homogenous biological state (an arc) or contains structural subpopulations (an elbow).
     - casting projectable dataset on the clustered training dataset
 - #### Phase III(P05_top_markers):
     - wilcoxon rank sum test stat method.
