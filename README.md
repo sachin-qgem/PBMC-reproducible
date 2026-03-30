@@ -127,16 +127,15 @@ make run
 │   ├── Teichlab_curated_markers.json   # Canonical marker validation dictionary
 │   └── universal_ontology_id_dict.json # Standardized Cell Ontology (CL) mapping
 │
-├── docs/                               # Project documentation and phase roadmaps
 ├── notebooks/                          # Audits and experimental derivations
 │
 ├── results/                            # Output staging and visual telemetry
 │   └── figures/                        # The Visual Proofs (QC, Clustering, Markers, Annotation)
 │
 ├── src/                                # The Python Logic Core
-│   ├── 01_upstream_pipeline/           # The Tombstone (Reference for FASTQ/BAM -> Matrix)
+│   ├── 01_upstream_pipeline/           # The Tombstone (Reference for FASTQ/BAM -> Matrix) But in pipeline , we use the filtered genes matix as input as I had MacOS only
 │   └── 02_analysis_scripts/            # The 5-Sigma Pipeline Engines
-│       ├── P02_matrix_construction.py  # Data ingestion and tensor formatting
+│       ├── P02_matrix_construction.py  # Data ingestion and tensor formatting (But in pipeline , we use the filtered genes matix as input as I had MacOS only)
 │       ├── P03_qc_filtering.py         # Phase I: 5-MAD outlier detection and matrix purge
 │       ├── P04_latets.py               # Phase II: Latent geometry, Jaccard validation, Topographical Sweep
 │       ├── P05_top_markers.py          # Phase III: Wilcoxon rank-sum extraction and lineage validation
