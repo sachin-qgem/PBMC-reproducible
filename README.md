@@ -11,7 +11,7 @@ pinned: false
 ---
 
 # PBMC-reproducible: Cybernetic Clustering and markers Engine
-
+DOI : 10.5281/zenodo.19335671
 **Status:** EXECUTION MODE  
 **Live Deployment:** [Access the Cybernetic Engine on Hugging Face Spaces](https://huggingface.co/spaces/sachin-qgemai-alpha/pbmc_single_healthy_donor)
 **Objective:** Reproduce the PBMC dataset analysis from First Principles using a Human-in-the-Loop architecture.
