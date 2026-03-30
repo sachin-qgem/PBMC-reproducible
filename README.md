@@ -23,35 +23,35 @@ We are auditing the standard pipeline to validate our learnt theory. We assume d
 ---
 ### The Phases:
 - #### Phase I(P03_qc_filtering): 
-        - 5-MAD outlier detection of Mito %
-        - Doublets Scrubs
-        - Dormant genes removal (genes expressed in less than 3 cells)
-        - Cells expressed in less than 200 genes removal
+    - 5-MAD outlier detection of Mito %
+    - Doublets Scrubs
+    - Dormant genes removal (genes expressed in less than 3 cells)
+    - Cells expressed in less than 200 genes removal
 - #### Phase II(P04_clustering):
-        - Cell Cycle check
-        - Double Dipping (random split main into training and projected 50-50) and data leakage addressed 
-        - Pearson Residuals, PCA, HVG , recal after every split of dataset in new space (of Training dataset only).
-        - KNN, UMAP, Leiden clustering
-        - Topological Mesa audit for a dynamic and informed decision for choosing optimal K-neighbors and Leiden resolution
-        - divide and save dataset based on macro or micro clusters
-        - PCA variance ration elbow check and terminal state to act as filter for not doing clustering of homogenous state of a split dataset.
-        - casting projectable dataset on the clustered training dataset
+    - Cell Cycle check
+    - Double Dipping (random split main into training and projected 50-50) and data leakage addressed 
+    - Pearson Residuals, PCA, HVG , recal after every split of dataset in new space (of Training dataset only).
+    - KNN, UMAP, Leiden clustering
+    - Topological Mesa audit for a dynamic and informed decision for choosing optimal K-neighbors and Leiden resolution
+    - divide and save dataset based on macro or micro clusters
+    - PCA variance ration elbow check and terminal state to act as filter for not doing clustering of homogenous state of a split dataset.
+    - casting projectable dataset on the clustered training dataset
 - #### Phase III(P05_top_markers):
-        - wilcoxon rank sum test stat method.
-        - filter the pvals_adj< 0.05 and logfoldchange < 10.0 (a gene that was only expressed in one single cell out of a thousand. It is statistical ghost data.)
-        - calculate the neg_log10_pvals_adj
-        - local 93 percentile of every cluster for neg_log10_pvals_adj
-        - ['violin_delta'] = ['pct_nz_group'] - ['pct_nz_reference']
-        - sort values based on voilen_delta
-        - take top 3 or 5 for every cluster
-        - Extracts top markers from all foreign matrices and projects them onto the target matrix to prove lineage isolation (Epigenetic Silencing).
-        - Executes automated reference-based annotation using CellTypist.
-        - Validates the matrix against a pre-curated JSON dictionary of canonical markers from Theis Lab.
+    - wilcoxon rank sum test stat method.
+    - filter the pvals_adj< 0.05 and logfoldchange < 10.0 (a gene that was only expressed in one single cell out of a thousand. It is statistical ghost data.)
+    - calculate the neg_log10_pvals_adj
+    - local 93 percentile of every cluster for neg_log10_pvals_adj
+    - ['violin_delta'] = ['pct_nz_group'] - ['pct_nz_reference']
+    - sort values based on voilen_delta
+    - take top 3 or 5 for every cluster
+    - Extracts top markers from all foreign matrices and projects them onto the target matrix to prove lineage isolation (Epigenetic Silencing).
+    - Executes automated reference-based annotation using CellTypist.
+    - Validates the matrix against a pre-curated JSON dictionary of canonical markers from Theis Lab.
 - #### Phase IV(P06_annotation):
-        - Injects human-verified biological annotations and standard Cell Ontology (CL) IDs into the localized Macro and Micro matrices.
-        - Calculates alignment scores against automated reference models.
-        - Extracts cell barcodes and injected labels from all isolated matrices and concatenates them into a master CSV ledger. Resolves barcode collisions by prioritizing the most recent execution state.
-        - Ingests the master CSV ledger and maps the final biological identities onto the raw, un-split global matrix. Exports the final ML-Ready artifact.
+    - Injects human-verified biological annotations and standard Cell Ontology (CL) IDs into the localized Macro and Micro matrices.
+    - Calculates alignment scores against automated reference models.
+    - Extracts cell barcodes and injected labels from all isolated matrices and concatenates them into a master CSV ledger. Resolves barcode collisions by prioritizing the most recent execution state.
+    - Ingests the master CSV ledger and maps the final biological identities onto the raw, un-split global matrix. Exports the final ML-Ready artifact.
 
 ---
 
