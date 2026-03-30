@@ -23,7 +23,7 @@ We are auditing the standard pipeline to validate our learnt theory. We assume d
 ---
 ### The Phases:
 - #### Phase I(P03_qc_filtering): 
-    - 5-MAD outlier detection of Mito %
+    - 5-MAD outlier detection of `Mito %`
     - Doublets Scrubs
     - Dormant genes removal (genes expressed in less than 3 cells)
     - Cells expressed in less than 200 genes removal
@@ -38,10 +38,10 @@ We are auditing the standard pipeline to validate our learnt theory. We assume d
     - casting projectable dataset on the clustered training dataset
 - #### Phase III(P05_top_markers):
     - wilcoxon rank sum test stat method.
-    - filter the pvals_adj< 0.05 and logfoldchange < 10.0 (a gene that was only expressed in one single cell out of a thousand. It is statistical ghost data.)
-    - calculate the neg_log10_pvals_adj
+    - filter the `pvals_adj< 0.05` and `logfoldchange < 10.0` (a gene that was only expressed in one single cell out of a thousand. It is statistical ghost data.)
+    - calculate the `neg_log10_pvals_adj`
     - local 93 percentile of every cluster for neg_log10_pvals_adj
-    - ['violin_delta'] = ['pct_nz_group'] - ['pct_nz_reference']
+    - `['violin_delta'] = ['pct_nz_group'] - ['pct_nz_reference']`
     - sort values based on voilen_delta
     - take top 3 or 5 for every cluster
     - Extracts top markers from all foreign matrices and projects them onto the target matrix to prove lineage isolation (Epigenetic Silencing).
