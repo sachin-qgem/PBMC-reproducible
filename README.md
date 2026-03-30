@@ -53,6 +53,7 @@ We are auditing the standard pipeline to validate our learnt theory. We assume d
             - Extracts cell barcodes and injected labels from all isolated matrices and concatenates them into a master CSV ledger. Resolves barcode collisions by prioritizing the most recent execution state.
             - Ingests the master CSV ledger and maps the final biological identities onto the raw, un-split global matrix. Exports the final ML-Ready artifact.
 
+---
 
 ### The Architectural Upgrades
 
