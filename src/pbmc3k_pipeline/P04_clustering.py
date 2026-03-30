@@ -799,7 +799,7 @@ def execute_micro_sweep(filepath: str, micro_key: str, plt_fig_dir: str) -> dict
     print(f"\n[SYSTEM] Sweeping Micro-State: {micro_key}")
     npr_hvg_pca_recal(filepath, micro_key)
     
-    micro_k_grid = np.arange(5, 105, 5).tolist()
+    micro_k_grid = np.arange(5, 65, 5).tolist()
     micro_r_grid = np.round(np.arange(0.1, 2.10, 0.2), 2).tolist()
     
     suggested_k, suggested_r = topographical_mesa_audit(
@@ -828,6 +828,18 @@ def lock_micro_state(
         leiden_res=human_r, key_name=f'{micro_key}_micro'
     )
     
+    # Purge clusters with cells less than 3
+    adata = load_evidence(filepath)
+    cluster_counts = adata.obs[m_leiden].value_counts()
+    anomalous_clusters = cluster_counts[cluster_counts < 3].index.tolist()
+    if anomalous_clusters:
+        print(f" [WARNING] Singularity Detected in {micro_key}. Purging clusters {anomalous_clusters} to preserve DE engine.")
+        valid_cells_mask = ~adata.obs[m_leiden].isin(anomalous_clusters)
+        adata = adata[valid_cells_mask].copy()
+        adata.obs[m_leiden] = adata.obs[m_leiden].cat.remove_unused_categories()
+        adata.write_h5ad(filepath)
+        print(" [SUCCESS] Micro-state purged and resealed.")
+
     return {'m_leiden': m_leiden, 'm_neighbors': m_neighbors}
 
 def orchestrator_B(dict_A: dict) -> dict:
