@@ -171,7 +171,8 @@ def knn_umap_leiden(
     n_neighbors: int, 
     n_pcs: int, 
     leiden_res: float, 
-    key_name: str
+    key_name: str,
+    embedding_dots_size: float
 ) -> tuple:
     """
     Computes baseline neighborhood graphs and UMAP embeddings. 
@@ -221,7 +222,7 @@ def knn_umap_leiden(
         )
         plot_basis = umap_key_added if umap_key_added is not None else 'X_umap'
         sc.pl.embedding(adata,basis=plot_basis,color=leiden_key,
-                components ='all',size= 50.0,color_map = 'Blues',show=False,
+                components ='all',size= embedding_dots_size,color_map = 'Blues',show=False,
                 title = 'Training Manifold',legend_loc = 'on data',
                 legend_fontsize = 'x-small',legend_fontweight = 'bold',
                 legend_fontoutline = 3,save=f".svg")
@@ -473,7 +474,7 @@ def topographical_mesa_audit(
 
     return final_k, final_r
 
-def is_thermodynamic_terminal_state(adata: ad.AnnData, min_cells: int = 100, elbow_threshold: float = 2.0) -> bool:
+def is_thermodynamic_terminal_state(adata: ad.AnnData, min_cells: int = 100, elbow_threshold: float = 3.5) -> bool:
     """
     Audits the PCA variance geometry to determine if a cluster is a homogenous 
     biological state (an arc) or contains structural subpopulations (an elbow).
@@ -516,7 +517,7 @@ def is_thermodynamic_terminal_state(adata: ad.AnnData, min_cells: int = 100, elb
     structural_ratio = pc1_energy / pc_baseline_energy
 
     # Evaluate structural ratio against the threshold
-    if structural_ratio < elbow_threshold:
+    if pc1_energy < 0.02 or structural_ratio < elbow_threshold:
         return True  # Terminal State Confirmed: Isotropic Arc
     
     return False # Structural cliff detected
@@ -778,7 +779,7 @@ def lock_macro_and_extract_micro_queue(
     
     macro_leiden_key, macro_neighbors_key = knn_umap_leiden(
         training_file_path, n_neighbors=human_k, n_pcs=10, 
-        leiden_res=human_r, key_name='macro'
+        leiden_res=human_r, key_name='macro',embedding_dots_size=20.0
     )
     
     micro_filepaths_dict = divide_and_save_dataset_based_on_macro_or_micro_clusters(
@@ -825,22 +826,10 @@ def lock_micro_state(
     
     m_leiden, m_neighbors = knn_umap_leiden(
         filepath, n_neighbors=human_k, n_pcs=10, 
-        leiden_res=human_r, key_name=f'{micro_key}_micro'
+        leiden_res=human_r, key_name=f'{micro_key}_micro',embedding_dots_size=40.0
     )
     
-    # Purge clusters with cells less than 3
-    adata = load_evidence(filepath)
-    cluster_counts = adata.obs[m_leiden].value_counts()
-    anomalous_clusters = cluster_counts[cluster_counts < 3].index.tolist()
-    if anomalous_clusters:
-        print(f" [WARNING] Singularity Detected in {micro_key}. Purging clusters {anomalous_clusters} to preserve DE engine.")
-        valid_cells_mask = ~adata.obs[m_leiden].isin(anomalous_clusters)
-        adata = adata[valid_cells_mask].copy()
-        adata.obs[m_leiden] = adata.obs[m_leiden].cat.remove_unused_categories()
-        adata.write_h5ad(filepath)
-        print(" [SUCCESS] Micro-state purged and resealed.")
-    del adata
-    gc.collect()
+    
     return {'m_leiden': m_leiden, 'm_neighbors': m_neighbors}
 
 def orchestrator_B(dict_A: dict) -> dict:

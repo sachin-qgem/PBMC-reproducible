@@ -74,12 +74,24 @@ def rank_gene_groups_wilcoxon(
     """
     print(f"[AUDIT] Executing Wilcoxon thermodynamic extraction for {leiden_key}...")
     adata = load_evidence(adata_path)
+
+
+    #clusters having less than 10 cells are ingnored from test stats
+    cluster_populations = adata.obs[leiden_key].value_counts()
+    viable_states = cluster_populations[cluster_populations >= 10].index.astype(str).tolist()
+    ghost_states = cluster_populations[cluster_populations < 10].index.astype(str).tolist()
+    if ghost_states:
+        print(f" [WARNING] Topology Anomaly in {leiden_key}: Clusters {ghost_states} lack minimum mass (N<10).")
+        print(" [SYSTEM] Exiling microscopic ghosts from Wilcoxon variance calculation...")
+    if len(viable_states) < 1:
+        print(f" [CRITICAL] {leiden_key} lacks sufficient viable states for differential comparison. Halting extraction.")
+        return annotation_manual_dict, ontology_cl_id_manual_dict
     
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=RuntimeWarning)
         sc.tl.rank_genes_groups(
             adata, groupby=leiden_key, method='wilcoxon', tie_correct=True, 
-            layer='log1p_norm', pts=True
+            groups=viable_states,layer='log1p_norm', pts=True
         )
         sc.tl.filter_rank_genes_groups(adata, use_raw=False)
         
@@ -112,19 +124,26 @@ def rank_gene_groups_wilcoxon(
         grouped_top_genes[str(cluster_id)] = genes
 
     print("[INFO] Rendering dendrogram, dotplot, and matrixplot evidence...")
-    sc.tl.dendrogram(adata, groupby=leiden_key)
+    
+    # Mathematically strip the ghost categories from the pandas index to prevent the rendering engine from hunting for missing variables.
+    adata_plot = adata[adata.obs[leiden_key].isin(viable_states)].copy()
+    adata_plot.obs[leiden_key] = adata_plot.obs[leiden_key].cat.remove_unused_categories()
+    
+    sc.tl.dendrogram(adata_plot, groupby=leiden_key)
+    
     safe_fig_name = f"_{leiden_key}_top_genes.svg"
     
     sc.pl.dotplot(
-        adata, var_names=grouped_top_genes, groupby=leiden_key, standard_scale='var',
-        dendrogram=True, cmap='Reds', use_raw=False, show=False, 
+        adata_plot, var_names=grouped_top_genes, groupby=leiden_key, standard_scale='var',
+        dendrogram=True, cmap='Reds', use_raw=False, show=False,
         save=safe_fig_name, layer='log1p_norm'
     )
     
     sc.pl.matrixplot(
-        adata, var_names=grouped_top_genes, groupby=leiden_key, dendrogram=True,
+        adata_plot, var_names=grouped_top_genes, groupby=leiden_key, dendrogram=True,
         standard_scale='var', save=safe_fig_name, show=False, layer='log1p_norm'
     )
+    
     
     plt.close('all')
     
@@ -147,7 +166,7 @@ def rank_gene_groups_wilcoxon(
         print(f"[WARNING] Key '{leiden_key}' not found in matrix. Ledger bypassed.")
         
     adata.write_h5ad(adata_path)
-    del adata, df, df_new, df_mask_1, df_mask_1_sorted, df_final
+    del adata, df, df_new, df_mask_1, df_mask_1_sorted, df_final,adata_plot
     gc.collect()
     
     return annotation_manual_dict,ontology_cl_id_manual_dict
@@ -312,7 +331,19 @@ def wide_span_plots(
     """
     print(f"[INFO] Generating wide-span canonical validation plots for {groupby_key}...")
     adata = load_evidence(adata_path)
-    available_genes = set(adata.var_names)
+
+    cluster_populations = adata.obs[groupby_key].value_counts()
+    viable_states = cluster_populations[cluster_populations >= 10].index.astype(str).tolist()
+    if len(viable_states) == 0:
+        print(f" [WARNING] No viable states (N>=10) in {groupby_key}. Aborting wide-span plots.")
+        del adata
+        gc.collect()
+        return None
+    adata_plot = adata[adata.obs[groupby_key].isin(viable_states)].copy()
+    adata_plot.obs[groupby_key] = adata_plot.obs[groupby_key].cat.remove_unused_categories()
+
+
+    available_genes = set(adata_plot.var_names)
     
     with open(curated_marker_wide_span_list_path, 'r') as file:
         curated_markers = json.load(file)
@@ -322,19 +353,19 @@ def wide_span_plots(
     
     if len(valid_genes) > 0:
         sc.pl.matrixplot(
-            adata, var_names=valid_genes, groupby=groupby_key, standard_scale=None,
+            adata_plot, var_names=valid_genes, groupby=groupby_key, standard_scale=None,
             use_raw=False, show=False, save=safe_fig_name,
             colorbar_title='Absolute Log-Mean Expression', layer='log1p_norm'
         )
         sc.pl.dotplot(
-            adata, var_names=valid_genes, groupby=groupby_key, standard_scale=None,
+            adata_plot, var_names=valid_genes, groupby=groupby_key, standard_scale=None,
             use_raw=False, show=False, save=safe_fig_name,
             colorbar_title='Absolute Log-Mean Expression', layer='log1p_norm'
         )
     else:
         print("[ERROR] Curated valid_genes list is empty. Visual rendering aborted.")
         
-    del adata
+    del adata,adata_plot
     gc.collect()
 
 
