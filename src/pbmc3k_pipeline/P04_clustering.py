@@ -785,7 +785,7 @@ def lock_macro_and_extract_micro_queue(
     
     macro_leiden_key, macro_neighbors_key = knn_umap_leiden(
         training_file_path, n_neighbors=human_k, n_pcs=10, 
-        leiden_res=human_r, key_name='macro',embedding_dots_size=20.0
+        leiden_res=human_r, key_name='macro',embedding_dots_size=5.0
     )
     
     micro_filepaths_dict = divide_and_save_dataset_based_on_macro_or_micro_clusters(
