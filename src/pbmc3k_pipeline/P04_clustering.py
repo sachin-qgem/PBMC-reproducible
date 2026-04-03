@@ -603,7 +603,13 @@ def npr_hvg_pca_recal(filepath: str, keys: str) -> None:
         sc.experimental.pp.highly_variable_genes(
             adata, theta=100.0, n_top_genes=2500, flavor='pearson_residuals', subset=False
         )
-        
+        mt_mask = adata.var['mt']
+        ribo_mask = adata.var['ribo']
+
+        exiled_count = (adata.var['highly_variable'] & (mt_mask | ribo_mask)).sum()
+        print(f" [AUDIT] Exiling {exiled_count} structural/apoptotic vectors from PCA space.")
+
+        adata.var.loc[mt_mask | ribo_mask, 'highly_variable'] = False
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
         sc.experimental.pp.normalize_pearson_residuals(adata, theta=100.0)
