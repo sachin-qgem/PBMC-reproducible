@@ -617,7 +617,7 @@ def npr_hvg_pca_recal(filepath: str, keys: str) -> None:
             adata, n_comps=n_comps, zero_center=True, svd_solver='arpack', mask_var='highly_variable'
         )
         
-        sc.pl.pca_variance_ratio(adata, n_pcs=100, save=f"_{keys}_.svg", show=False)
+        sc.pl.pca_variance_ratio(adata, n_pcs=n_comps, save=f"_{keys}_.svg", show=False)
         adata.write_h5ad(filepath)
         
     del adata
