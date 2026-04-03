@@ -486,7 +486,7 @@ def is_thermodynamic_terminal_state(adata: ad.AnnData, min_cells: int = 100, elb
     # 2. Extract Local Structure
     # We must calculate local Highly Variable Genes to expose hidden sub-populations.
     # We use a try-except block to catch matrices that are too sparse for Pearson Residuals.
-    n_comps = min(100, adata.n_obs - 1)
+    n_comps = min(50, adata.n_obs - 1)
     if 'pca' not in adata.uns or 'variance_ratio' not in adata.uns['pca']:
         try:
             sc.experimental.pp.highly_variable_genes(
@@ -508,7 +508,7 @@ def is_thermodynamic_terminal_state(adata: ad.AnnData, min_cells: int = 100, elb
     # 3. Calculate the Structural Energy Ratio
     pc1_energy = variance_ratios[0]
     start_noise = 10
-    end_noise = min(50, len(variance_ratios))
+    end_noise = min(25, len(variance_ratios))
     if end_noise <= start_noise:
         pc_baseline_energy = np.median(variance_ratios[max(1, len(variance_ratios)//2):])
     else:
