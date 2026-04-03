@@ -40,8 +40,8 @@ def load_evidence(path: str) -> ad.AnnData:
 
 def calculate_vital_signs(adata: ad.AnnData) -> ad.AnnData:
     """
-    Calculates primary quality control metrics, focusing on mitochondrial 
-    expression to establish cell viability thresholds.
+    Calculates primary quality control metrics, utilizing absolute genomic ledgers
+    to track Mitochondrial and Ribosomal mass.
 
     Parameters
     ----------
@@ -54,10 +54,19 @@ def calculate_vital_signs(adata: ad.AnnData) -> ad.AnnData:
         The matrix annotated with 'n_genes_by_counts', 'total_counts', 
         and 'pct_counts_mt'.
     """
+    print(" [INFO] Cross-referencing against Broad Institute Ribosomal Ledger...")
+    
     adata.var['mt'] = adata.var_names.str.startswith('MT-')
+
+    ribo_url = "http://software.broadinstitute.org/gsea/msigdb/download_geneset.jsp?geneSetName=KEGG_RIBOSOME&fileType=txt"
+    ribo_ledger = pd.read_table(ribo_url, skiprows=2, header=None)
+    ribo_genes = ribo_ledger[0].values.tolist()
+    
+    adata.var['ribo'] = adata.var_names.isin(ribo_genes)
+
     sc.pp.calculate_qc_metrics(
         adata, 
-        qc_vars=["mt"], 
+        qc_vars=["mt","ribo"], 
         expr_type="counts",
         inplace=True, 
         log1p=False
