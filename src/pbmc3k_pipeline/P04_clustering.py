@@ -599,7 +599,7 @@ def npr_hvg_pca_recal(filepath: str, keys: str) -> None:
     adata.X = adata.layers['counts'].copy()
     
     if adata.n_obs > 50:
-        n_comps = min(100,adata.n_obs-1)
+        n_comps = min(50,adata.n_obs-1)
         sc.experimental.pp.highly_variable_genes(
             adata, theta=100.0, n_top_genes=2500, flavor='pearson_residuals', subset=False
         )
