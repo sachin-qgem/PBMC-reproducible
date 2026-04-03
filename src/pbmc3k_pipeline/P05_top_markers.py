@@ -98,7 +98,7 @@ def rank_gene_groups_wilcoxon(
     df = sc.get.rank_genes_groups_df(adata, group=None, key='rank_genes_groups_filtered')
     
     # Statistical isolation
-    pvals_adj_logfc_mask = (df['pvals_adj'] < 0.05) & (df['logfoldchanges'] < 10.0)
+    pvals_adj_logfc_mask = (df['pvals_adj'] < 0.05) & (df['logfoldchanges'] > 1.0) & (df['logfoldchanges'] < 10.0)
     df_new = df[pvals_adj_logfc_mask].dropna(subset=['names']).copy()
     
     # Avoid log(0) warnings by adding a tiny epsilon if needed, though scanpy usually handles it.
