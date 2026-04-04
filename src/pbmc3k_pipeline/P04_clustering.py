@@ -227,7 +227,7 @@ def knn_umap_leiden(
                 legend_fontsize = 'x-small',legend_fontweight = 'bold',
                 legend_fontoutline = 3,save=f".svg")
         
-        print(f"\n [AUDIT] Subsampling stability evaluation for '{key_name}'...")
+        print(f"\n[AUDIT] Subsampling stability evaluation for '{key_name}'...")
         n_iterations = 20
         subsample_fraction = 0.8
         np.random.seed(42)
@@ -561,9 +561,9 @@ def divide_and_save_dataset_based_on_macro_or_micro_clusters(
                 print(" [SUGGESTION] If a continuous transition is suspected, consider Trajectory Inference methods.")
                 lineage_key = f"{lineage_key}_Terminal_State"
             else:
-                print(f" [INFO] Cluster {cluster_id} (N={adata_subset.n_obs}): Structural elbow detected. Approved for Topographical Sweep.")
+                print(f"[INFO] Cluster {cluster_id} (N={adata_subset.n_obs}): Structural elbow detected. Approved for Topographical Sweep.")
         else:
-            print(f" [INFO] Projection Protocol: Fracturing Cluster {cluster_id} without thermodynamic audit.")   
+            print(f"[INFO] Projection Protocol: Fracturing Cluster {cluster_id} without thermodynamic audit.")   
         new_filename = f"{base_name}_{lineage_key}.h5ad"
         new_filepath_obj = directory / new_filename
         
@@ -607,7 +607,7 @@ def npr_hvg_pca_recal(filepath: str, keys: str) -> None:
         ribo_mask = adata.var['ribo']
 
         exiled_count = (adata.var['highly_variable'] & (mt_mask | ribo_mask)).sum()
-        print(f" [AUDIT] Exiling {exiled_count} structural/apoptotic vectors from PCA space.")
+        print(f"[AUDIT] Exiling {exiled_count} structural/apoptotic vectors from PCA space.")
 
         adata.var.loc[mt_mask | ribo_mask, 'highly_variable'] = False
         with warnings.catch_warnings():

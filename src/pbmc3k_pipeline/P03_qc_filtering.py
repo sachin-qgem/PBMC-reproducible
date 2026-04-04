@@ -54,7 +54,7 @@ def calculate_vital_signs(adata: ad.AnnData) -> ad.AnnData:
         The matrix annotated with 'n_genes_by_counts', 'total_counts', 
         and 'pct_counts_mt'.
     """
-    print(" [INFO] Cross-referencing against Broad Institute Ribosomal Ledger...")
+    print("[INFO] Cross-referencing against Broad Institute Ribosomal Ledger...")
     
     adata.var['mt'] = adata.var_names.str.startswith('MT-')
 
