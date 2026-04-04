@@ -42,6 +42,30 @@ def load_evidence(h5ad_path: str) -> ad.AnnData:
     
     return adata
 
+def calculate_elastic_threshold(group, min_survivors=3, base_quantile=0.9375):
+        """
+        Dynamically adjusts the distillation threshold. 
+        Guarantees a Minimum Viable Payload (MVP) of markers for fragile micro-states 
+        while preserving the strict Q93 filter for massive continents.
+        """
+        # Calculate the strict theoretical threshold
+        q_val = group.quantile(base_quantile)
+        
+        # Calculate how many physical genes would survive this cut
+        surviving_mass = (group >= q_val).sum()
+        
+        if surviving_mass < min_survivors:
+            # The Starvation Limit is breached. Engage fallback.
+            if len(group) >= min_survivors:
+                # Lower the threshold just enough to capture exactly the top 'min_survivors'
+                q_val = group.nlargest(min_survivors).iloc[-1]
+            else:
+                # The cluster has fewer than 3 total valid genes.
+                q_val = group.min()
+                
+        return q_val
+
+    
 
 def rank_gene_groups_wilcoxon(
     adata_path: str, 
@@ -81,8 +105,8 @@ def rank_gene_groups_wilcoxon(
     viable_states = cluster_populations[cluster_populations >= 10].index.astype(str).tolist()
     ghost_states = cluster_populations[cluster_populations < 10].index.astype(str).tolist()
     if ghost_states:
-        print(f" [WARNING] Topology Anomaly in {leiden_key}: Clusters {ghost_states} lack minimum mass (N<10).")
-        print(" [SYSTEM] Exiling microscopic ghosts from Wilcoxon variance calculation...")
+        print(f"[WARNING]⚠️ Topology Anomaly in {leiden_key}: Clusters {ghost_states} lack minimum mass (N<10).")
+        print("[SYSTEM] Exiling microscopic ghosts from Wilcoxon variance calculation...")
     if len(viable_states) < 1:
         print(f" [CRITICAL] {leiden_key} lacks sufficient viable states for differential comparison. Halting extraction.")
         return annotation_manual_dict, ontology_cl_id_manual_dict
@@ -104,9 +128,9 @@ def rank_gene_groups_wilcoxon(
     # Avoid log(0) warnings by adding a tiny epsilon if needed, though scanpy usually handles it.
     df_new['nlog10pval_adj'] = -np.log10(df_new['pvals_adj'] + 1e-300)
     
-    # Dynamic quantile thresholding
+    # Apply the elastic threshold to the tensor
     df_new['local_Q93'] = df_new.groupby('group')['nlog10pval_adj'].transform(
-        lambda x: x.quantile(quantile)
+        lambda x: calculate_elastic_threshold(x, min_survivors=3, base_quantile=quantile)
     )
     df_new['violin_delta'] = df_new['pct_nz_group'] - df_new['pct_nz_reference']
     
@@ -136,12 +160,12 @@ def rank_gene_groups_wilcoxon(
     sc.pl.dotplot(
         adata_plot, var_names=grouped_top_genes, groupby=leiden_key, standard_scale='var',
         dendrogram=True, cmap='Reds', use_raw=False, show=False,
-        save=safe_fig_name, layer='log1p_norm'
+        save=safe_fig_name, layer='log1p_norm', title=f"dotplot_{leiden_key}_top_genes"
     )
     
     sc.pl.matrixplot(
         adata_plot, var_names=grouped_top_genes, groupby=leiden_key, dendrogram=True,
-        standard_scale='var', save=safe_fig_name, show=False, layer='log1p_norm'
+        standard_scale='var', save=safe_fig_name, show=False, layer='log1p_norm', title=f"matrixplot_{leiden_key}_top_genes"
     )
     
     
@@ -263,7 +287,7 @@ def execute_absence_cross_validation(
     sc.pl.matrixplot(
         adata_target, var_names=safe_contamination_dict, groupby=current_leiden_key,
         standard_scale=None, use_raw=False, show=False, save=safe_fig_name,
-        colorbar_title='Absolute Log-Mean Expression', layer='log1p_norm'
+        colorbar_title='Absolute Log-Mean Expression', layer='log1p_norm', title=f"matrix_plot_absence_audit_macro_{target_macro_id}"
     )
     
     plt.close('all')
@@ -355,12 +379,12 @@ def wide_span_plots(
         sc.pl.matrixplot(
             adata_plot, var_names=valid_genes, groupby=groupby_key, standard_scale=None,
             use_raw=False, show=False, save=safe_fig_name,
-            colorbar_title='Absolute Log-Mean Expression', layer='log1p_norm'
+            colorbar_title='Absolute Log-Mean Expression', layer='log1p_norm',title = f"matrixplot_curated_genes_audit_widespan_{groupby_key}"
         )
         sc.pl.dotplot(
             adata_plot, var_names=valid_genes, groupby=groupby_key, standard_scale=None,
             use_raw=False, show=False, save=safe_fig_name,
-            colorbar_title='Absolute Log-Mean Expression', layer='log1p_norm'
+            colorbar_title='Absolute Log-Mean Expression', layer='log1p_norm', title= f"dotplot_curated_genes_audit_widespan_{groupby_key}"
         )
     else:
         print("[ERROR] Curated valid_genes list is empty. Visual rendering aborted.")
@@ -470,7 +494,7 @@ def orc_project(
         
     print("\n[ORCHESTRATOR] Initiating Phase 2: Global Forensic Cross-Validation...")
     for leiden_dict_key, file_path in micro_paths_dict.items():
-        print(f"\n [MICRO AUDIT] Executing visual proofs for: {leiden_dict_key}")
+        print(f"\n[MICRO AUDIT] Executing visual proofs for: {leiden_dict_key}")
         
         if not op.exists(file_path):
             continue  # Already logged in Phase 1
