@@ -107,8 +107,24 @@ def rank_gene_groups_wilcoxon(
     if ghost_states:
         print(f"[WARNING]⚠️ Topology Anomaly in {leiden_key}: Clusters {ghost_states} lack minimum mass (N<10).")
         print("[SYSTEM] Exiling microscopic ghosts from Wilcoxon variance calculation...")
-    if len(viable_states) < 1:
-        print(f" [CRITICAL] {leiden_key} lacks sufficient viable states for differential comparison. Halting extraction.")
+    if len(viable_states) < 2:
+        print(f" [SYSTEM] {leiden_key} possesses fewer than 2 viable states ({len(viable_states)}). Thermodynamic comparison impossible.")
+        print(" [SYSTEM] Bypassing Wilcoxon matrix geometry to prevent spatial collapse...")
+        
+        
+        if leiden_key in adata.obs:
+            clusters = sorted(
+                adata.obs[leiden_key].dropna().unique().tolist(), 
+                key=lambda x: int(x) if str(x).isdigit() else x
+            )
+            annotation_manual_dict[leiden_key] = {str(c): None for c in clusters}
+            ontology_cl_id_manual_dict[leiden_key] = {str(c): None for c in clusters}
+            print(f"[SUCCESS] Appended {len(clusters)} raw states to ledger via bypass.")
+            
+        
+        adata.write_h5ad(adata_path)
+        del adata
+        gc.collect()
         return annotation_manual_dict, ontology_cl_id_manual_dict
     
     with warnings.catch_warnings():
