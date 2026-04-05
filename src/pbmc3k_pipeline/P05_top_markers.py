@@ -163,30 +163,35 @@ def rank_gene_groups_wilcoxon(
         genes = df_final[df_final['group'] == cluster_id]['names'].tolist()
         grouped_top_genes[str(cluster_id)] = genes
 
-    print("[INFO] Rendering dendrogram, dotplot, and matrixplot evidence...")
-    
-    # Mathematically strip the ghost categories from the pandas index to prevent the rendering engine from hunting for missing variables.
-    adata_plot = adata[adata.obs[leiden_key].isin(viable_states)].copy()
-    adata_plot.obs[leiden_key] = adata_plot.obs[leiden_key].cat.remove_unused_categories()
-    
-    sc.tl.dendrogram(adata_plot, groupby=leiden_key)
-    
-    safe_fig_name = f"_{leiden_key}_top_genes.svg"
-    
-    sc.pl.dotplot(
-        adata_plot, var_names=grouped_top_genes, groupby=leiden_key, standard_scale='var',
-        dendrogram=True, cmap='Reds', use_raw=False, show=False,
-        save=safe_fig_name, layer='log1p_norm', title=f"dotplot_{leiden_key}_top_genes"
-    )
-    
-    sc.pl.matrixplot(
-        adata_plot, var_names=grouped_top_genes, groupby=leiden_key, dendrogram=True,
-        standard_scale='var', save=safe_fig_name, show=False, layer='log1p_norm', title=f"matrixplot_{leiden_key}_top_genes"
-    )
-    
-    
-    plt.close('all')
-    
+    if not grouped_top_genes:
+        print(f" [WARNING] Thermodynamic Void in {leiden_key}: Zero genes survived the absolute floor (LogFC > 1.0).")
+        print(" [SYSTEM] Bypassing Matplotlib rendering to prevent X-axis spatial collapse...")
+    else:
+        print("[INFO] Rendering dendrogram, dotplot, and matrixplot evidence...")
+        
+        # Mathematically strip the ghost categories from the pandas index to prevent the rendering engine from hunting for missing variables.
+        adata_plot = adata[adata.obs[leiden_key].isin(viable_states)].copy()
+        adata_plot.obs[leiden_key] = adata_plot.obs[leiden_key].cat.remove_unused_categories()
+        
+        sc.tl.dendrogram(adata_plot, groupby=leiden_key)
+        
+        safe_fig_name = f"_{leiden_key}_top_genes.svg"
+        
+        sc.pl.dotplot(
+            adata_plot, var_names=grouped_top_genes, groupby=leiden_key, standard_scale='var',
+            dendrogram=True, cmap='Reds', use_raw=False, show=False,
+            save=safe_fig_name, layer='log1p_norm', title=f"dotplot_{leiden_key}_top_genes"
+        )
+        
+        sc.pl.matrixplot(
+            adata_plot, var_names=grouped_top_genes, groupby=leiden_key, dendrogram=True,
+            standard_scale='var', save=safe_fig_name, show=False, layer='log1p_norm', title=f"matrixplot_{leiden_key}_top_genes"
+        )
+        
+        
+        plt.close('all')
+        del adata_plot
+
     # State storage
     adata.uns['final_top_genes_per_cluster'] = df_final
     if 'rank_genes_groups_filtered' in adata.uns:
@@ -206,7 +211,7 @@ def rank_gene_groups_wilcoxon(
         print(f"[WARNING] Key '{leiden_key}' not found in matrix. Ledger bypassed.")
         
     adata.write_h5ad(adata_path)
-    del adata, df, df_new, df_mask_1, df_mask_1_sorted, df_final,adata_plot
+    del adata, df, df_new, df_mask_1, df_mask_1_sorted, df_final
     gc.collect()
     
     return annotation_manual_dict,ontology_cl_id_manual_dict
