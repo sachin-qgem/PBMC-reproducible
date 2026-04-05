@@ -164,8 +164,8 @@ def rank_gene_groups_wilcoxon(
         grouped_top_genes[str(cluster_id)] = genes
 
     if not grouped_top_genes:
-        print(f" [WARNING] Thermodynamic Void in {leiden_key}: Zero genes survived the absolute floor (LogFC > 1.0).")
-        print(" [SYSTEM] Bypassing Matplotlib rendering to prevent X-axis spatial collapse...")
+        print(f"[WARNING] Thermodynamic Void in {leiden_key}: Zero genes survived the absolute floor (LogFC > 1.0).")
+        print("[SYSTEM] Bypassing Matplotlib rendering to prevent X-axis spatial collapse...")
     else:
         print("[INFO] Rendering dendrogram, dotplot, and matrixplot evidence...")
         
