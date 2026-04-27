@@ -63,6 +63,8 @@ def initialize_session_vault() -> None:
         st.session_state.phase2_grid_swept = False
     if "phase2_complete" not in st.session_state:
         st.session_state.phase2_complete = False
+    if "temp_jaccard_scores" not in st.session_state:
+        st.session_state.temp_jaccard_scores = None
     # --- PHASE II: ITERATIVE STATE MACHINE ---
     if "phase2_macro_swept" not in st.session_state:
         st.session_state.phase2_macro_swept = False
@@ -363,15 +365,42 @@ def main() -> None:
                 img_src = f"data:image/svg+xml;base64,{b64_svg}"
                 st.markdown(f"<div style='border: 1px solid #444; padding: 10px; background: white;'><img src='{img_src}' style='width: 100%;'></div>", unsafe_allow_html=True)
 
-            with st.form("macro_override_form"):
-                c1, c2 = st.columns(2)
-                with c1:
-                    chosen_k = st.number_input("Optimal k (Neighbors)", value=int(st.session_state.p04_suggested_k), min_value=10, max_value=100, step=5)
-                with c2:
-                    chosen_r = st.number_input("Optimal r (Resolution)", value=float(st.session_state.p04_suggested_r), min_value=0.01, max_value=2.0, step=0.01)
-                    
-                if st.form_submit_button("Lock Macro Coordinates & Initiate Micro-Queue", type="primary"):
+            # INTERACTIVE DRY-RUNS
+            c1, c2 = st.columns(2)
+            with c1:
+                chosen_k = st.number_input("Optimal k (Neighbors)", value=int(st.session_state.p04_suggested_k), min_value=5, max_value=200, step=5, key="macro_k")
+            with c2:
+                chosen_r = st.number_input("Optimal r (Resolution)", value=float(st.session_state.p04_suggested_r), min_value=0.01, max_value=3.0, step=0.01, key="macro_r")
+
+            col_test, col_lock = st.columns(2)
+            
+            # THE DRY-RUN PROTOCOL
+            with col_test:
+                if st.button("🧪 Test Jaccard Stability (Dry-Run)", type="secondary", key="test_macro"):
+                    with st.spinner(f"Testing Jaccard Stability at k={chosen_k}, r={chosen_r}..."):
+                        st.session_state.temp_jaccard_scores = P04_clustering.test_jaccard_stability(
+                            st.session_state.p04_training_file_path, chosen_k, chosen_r
+                        )
+                        st.rerun()
+
+            # RENDER TELEMETRY IF IN RAM
+            if st.session_state.temp_jaccard_scores:
+                st.markdown("#### 📊 Simulated Jaccard Telemetry")
+                for cluster_id, score in st.session_state.temp_jaccard_scores.items():
+                    if score >= 0.85:
+                        st.success(f"Cluster {cluster_id}: {score:.3f} [HIGH STABILITY]")
+                    elif score >= 0.60:
+                        st.warning(f"Cluster {cluster_id}: {score:.3f} [MODERATE STABILITY]")
+                    else:
+                        st.error(f"Cluster {cluster_id}: {score:.3f} [LOW STABILITY]")
+                st.divider()
+
+            # THE PERMANENT LOCK PROTOCOL
+            with col_lock:
+                if st.button("🔒 Lock Macro Coordinates & Initiate Micro-Queue", type="primary", key="lock_macro"):
                     with st.spinner("Locking Macro-State and Extracting Micro-Continents..."):
+                        st.session_state.temp_jaccard_scores = None # Flush test RAM
+                        
                         macro_state = P04_clustering.lock_macro_and_extract_micro_queue(
                             st.session_state.p04_training_file_path, chosen_k, chosen_r, './data/regev_lab_cell_cycle_genes.txt'
                         )
@@ -379,9 +408,7 @@ def main() -> None:
                         st.session_state.macro_neighbors_key = macro_state['macro_neighbors_key']
                         st.session_state.micro_filepaths_dict = macro_state['micro_filepaths_dict']
                         
-                        # Build the processing queue (Ignoring Terminal States automatically)
                         st.session_state.micro_queue = [k for k in macro_state['micro_filepaths_dict'].keys() if 'Terminal_State' not in k]
-                        
                         st.session_state.phase2_macro_locked = True
                         st.rerun()
 
@@ -418,15 +445,42 @@ def main() -> None:
                         img_src = f"data:image/svg+xml;base64,{b64_svg}"
                         st.markdown(f"<div style='border: 1px solid #444; padding: 10px; background: white;'><img src='{img_src}' style='width: 100%;'></div>", unsafe_allow_html=True)
                     
-                    with st.form(f"micro_override_{current_micro}"):
-                        c1, c2 = st.columns(2)
-                        with c1:
-                            chosen_k = st.number_input("Optimal k (Neighbors)", value=int(st.session_state.current_micro_k), min_value=5, max_value=60, step=5)
-                        with c2:
-                            chosen_r = st.number_input("Optimal r (Resolution)", value=float(st.session_state.current_micro_r), min_value=0.1, max_value=2.0, step=0.1)
-                            
-                        if st.form_submit_button(f"Lock `{current_micro}` & Proceed to Next", type="primary"):
-                            with st.spinner(f"Locking {current_micro} and calculating Jaccard Stability(view in terminal logs)..."):
+                    # REMOVED st.form TO ALLOW INTERACTIVE DRY-RUNS
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        chosen_k = st.number_input("Optimal k (Neighbors)", value=int(st.session_state.current_micro_k), min_value=5, max_value=200, step=5, key=f"k_{current_micro}")
+                    with c2:
+                        chosen_r = st.number_input("Optimal r (Resolution)", value=float(st.session_state.current_micro_r), min_value=0.01, max_value=3.0, step=0.01, key=f"r_{current_micro}")
+
+                    col_test, col_lock = st.columns(2)
+                    
+                    # THE DRY-RUN PROTOCOL
+                    with col_test:
+                        if st.button("🧪 Test Jaccard Stability (Dry-Run)", type="secondary", key=f"test_{current_micro}"):
+                            with st.spinner(f"Testing Jaccard Stability for {current_micro} at k={chosen_k}, r={chosen_r}..."):
+                                st.session_state.temp_jaccard_scores = P04_clustering.test_jaccard_stability(
+                                    filepath, chosen_k, chosen_r
+                                )
+                                st.rerun()
+
+                    # RENDER TELEMETRY IF IN RAM
+                    if st.session_state.temp_jaccard_scores:
+                        st.markdown(f"#### 📊 Simulated Jaccard Telemetry: {current_micro}")
+                        for cluster_id, score in st.session_state.temp_jaccard_scores.items():
+                            if score >= 0.85:
+                                st.success(f"Cluster {cluster_id}: {score:.3f} [HIGH STABILITY]")
+                            elif score >= 0.60:
+                                st.warning(f"Cluster {cluster_id}: {score:.3f} [MODERATE STABILITY]")
+                            else:
+                                st.error(f"Cluster {cluster_id}: {score:.3f} [LOW STABILITY]")
+                        st.divider()
+
+                    # THE PERMANENT LOCK PROTOCOL
+                    with col_lock:
+                        if st.button(f"🔒 Lock {current_micro} & Proceed to Next", type="primary", key=f"lock_{current_micro}"):
+                            with st.spinner(f"Locking {current_micro} and sealing coordinates..."):
+                                st.session_state.temp_jaccard_scores = None # Flush test RAM
+                                
                                 micro_result = P04_clustering.lock_micro_state(
                                     filepath, current_micro, chosen_k, chosen_r, './data/regev_lab_cell_cycle_genes.txt'
                                 )
@@ -434,7 +488,6 @@ def main() -> None:
                                 if micro_result['m_leiden']:
                                     st.session_state.final_micro_leiden_dict[current_micro] = micro_result['m_leiden']
                                     st.session_state.final_micro_neighbors_dict[current_micro] = micro_result['m_neighbors']
-                                
                                 
                                 st.session_state.micro_queue.pop(0)
                                 st.session_state.current_micro_swept = False
