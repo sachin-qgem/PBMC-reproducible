@@ -165,6 +165,96 @@ def random_split_data(h5ad_path: str, save_folder_path: str) -> dict:
     print("[SUCCESS] Split completed. Paths secured.")
     return paths
 
+def execute_jaccard_bootstrapping(
+        adata: ad.AnnData,
+        leiden_key: str,
+        k: int,
+        r: float,
+        n_pcs: int
+) :
+    """
+    The core physics engine for topological stability.
+    Operates strictly on in-memory tensors to prevent redundant disk I/O.
+    """
+    n_iterations = 20
+    subsample_fraction = 0.8
+    np.random.seed(42)
+    
+    original_labels = adata.obs[leiden_key].astype(str)
+    unique_clusters = original_labels.unique()
+    jaccard_ledger = {cluster: [] for cluster in unique_clusters}
+    
+    # Scale knn parameter linearly with subsample fraction to maintain graph density
+    boot_k = max(2, int(k * subsample_fraction))
+    
+    for i in range(n_iterations):
+        n_keep = int(adata.n_obs * subsample_fraction)
+        surviving_indices = np.random.choice(
+            adata.obs_names, size=n_keep, replace=False
+        )
+        
+        adata_sub = adata[surviving_indices].copy()
+        
+        sc.pp.neighbors(
+            adata_sub, n_neighbors=boot_k, n_pcs=n_pcs, method='umap',
+            knn=True, metric='euclidean', random_state=42,
+            use_rep='X_pca', key_added='boot_neighbors'
+        )
+        
+        sc.tl.leiden(
+            adata_sub, resolution=r, neighbors_key='boot_neighbors',
+            key_added='boot_leiden', random_state=42
+        )
+        
+        new_labels = adata_sub.obs['boot_leiden'].astype(str)
+        
+        for orig_cluster in unique_clusters:
+            # Extract numpy array via .values to prevent Pandas index misalignment during masking
+            mask = (original_labels[surviving_indices] == orig_cluster).values
+            orig_cells_in_sub = adata_sub.obs_names[mask]
+            
+            if len(orig_cells_in_sub) == 0:
+                jaccard_ledger[orig_cluster].append(0.0)
+                continue
+                
+            best_match_cluster = new_labels[orig_cells_in_sub].value_counts().index[0]
+            
+            set_A = set(orig_cells_in_sub)
+            set_B = set(adata_sub.obs_names[new_labels == best_match_cluster])
+            
+            union_len = len(set_A.union(set_B))
+            jaccard_score = len(set_A.intersection(set_B)) / union_len if union_len > 0 else 0.0
+            
+            jaccard_ledger[orig_cluster].append(jaccard_score)
+            
+        del adata_sub
+        gc.collect()
+    final_scores = {}
+    for cluster, scores in jaccard_ledger.items():
+        final_scores[str(cluster)] = float(np.mean(scores))
+        
+    return final_scores
+
+
+def test_jaccard_stability(filepath: str, k: int, r: float) -> dict:
+    """
+    Dry-run wrapper for the UI. Loads the tensor, tests it, and destroys it.
+    """
+    print(f"\n[AUDIT] Simulating Jaccard Tests at k={k}, r={r}...")
+    adata = load_evidence(filepath)
+    
+    sc.pp.neighbors(adata, n_neighbors=k, n_pcs=10, method='umap', knn=True, random_state=42)
+    sc.tl.leiden(adata, resolution=r, random_state=42, key_added='temp_test_leiden')
+    
+    # Route through the core engine
+    final_scores = execute_jaccard_bootstrapping(adata, leiden_key='temp_test_leiden', k=k, r=r,n_pcs=10)
+    
+    del adata
+    import gc
+    gc.collect()
+    
+    return final_scores
+
 
 def knn_umap_leiden(
     training_side_file_path: str, 
@@ -197,7 +287,7 @@ def knn_umap_leiden(
         (leiden_key, neighbors_key) generated during the operation.
     """
     adata = load_evidence(training_side_file_path)
-    adata_su_check = adata.copy()
+    
     
     leiden_key = None
     neighbors_key = None
@@ -227,66 +317,17 @@ def knn_umap_leiden(
                 legend_fontsize = 'x-small',legend_fontweight = 'bold',
                 legend_fontoutline = 3,save=f".svg")
         
+        # Jaccard Test for Sampling and Uncertainity
+        adata_su_check = adata.copy()
         print(f"\n[AUDIT] Subsampling stability evaluation for '{key_name}'...")
-        n_iterations = 20
-        subsample_fraction = 0.8
-        np.random.seed(42)
         
-        original_labels = adata.obs[leiden_key].astype(str)
-        unique_clusters = original_labels.unique()
-        jaccard_ledger = {cluster: [] for cluster in unique_clusters}
         
-        # Scale knn parameter linearly with subsample fraction to maintain graph density
-        boot_k = max(2, int(n_neighbors * subsample_fraction))
-        
-        for i in range(n_iterations):
-            n_keep = int(adata_su_check.n_obs * subsample_fraction)
-            surviving_indices = np.random.choice(
-                adata_su_check.obs_names, size=n_keep, replace=False
-            )
-            
-            adata_sub = adata_su_check[surviving_indices].copy()
-            
-            sc.pp.neighbors(
-                adata_sub, n_neighbors=boot_k, n_pcs=n_pcs, method='umap',
-                knn=True, metric='euclidean', random_state=42,
-                use_rep='X_pca', key_added='boot_neighbors'
-            )
-            
-            sc.tl.leiden(
-                adata_sub, resolution=leiden_res, neighbors_key='boot_neighbors',
-                key_added='boot_leiden', random_state=42
-            )
-            
-            new_labels = adata_sub.obs['boot_leiden'].astype(str)
-            
-            for orig_cluster in unique_clusters:
-                # Extract numpy array via .values to prevent Pandas index misalignment during masking
-                mask = (original_labels[surviving_indices] == orig_cluster).values
-                orig_cells_in_sub = adata_sub.obs_names[mask]
-                
-                if len(orig_cells_in_sub) == 0:
-                    jaccard_ledger[orig_cluster].append(0.0)
-                    continue
-                    
-                best_match_cluster = new_labels[orig_cells_in_sub].value_counts().index[0]
-                
-                set_A = set(orig_cells_in_sub)
-                set_B = set(adata_sub.obs_names[new_labels == best_match_cluster])
-                
-                union_len = len(set_A.union(set_B))
-                jaccard_score = len(set_A.intersection(set_B)) / union_len if union_len > 0 else 0.0
-                
-                jaccard_ledger[orig_cluster].append(jaccard_score)
-                
-            del adata_sub
-            gc.collect()
-        
+        jaccard_ledger = execute_jaccard_bootstrapping(adata=adata_su_check,leiden_key=leiden_key,
+                                                       k=n_neighbors,r=leiden_res,n_pcs=n_pcs)
         print(f" JACCARD UNCERTAINTY DIAGNOSTIC: {key_name} ---")
-        su_grades_for_disk = {}
         
-        for orig_cluster, scores in jaccard_ledger.items():
-            mean_score = np.mean(scores)
+        
+        for orig_cluster, mean_score in jaccard_ledger.items():
             if mean_score >= 0.85:
                 grade = "[HIGH STABILITY]"
             elif mean_score >= 0.60:
@@ -295,10 +336,10 @@ def knn_umap_leiden(
                 grade = "[LOW STABILITY]"
                 
             print(f"  Cluster {orig_cluster}: Jaccard = {mean_score:.3f} {grade}")
-            su_grades_for_disk[orig_cluster] = float(mean_score)
+            
             
         # The Permanent Anchor
-        adata.uns[f'{leiden_key}_SU_grades'] = su_grades_for_disk
+        adata.uns[f'{leiden_key}_SU_grades'] = jaccard_ledger
         adata.write_h5ad(training_side_file_path)
         
     del adata, adata_su_check
