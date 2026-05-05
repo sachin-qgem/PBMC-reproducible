@@ -109,6 +109,19 @@ make run
 
 ---
 
+## ⚠️ Note on High-Fidelity Visual Rendering
+This repository contains high-density single-cell transcriptomic visualizations (UMAPs, PCA manifolds, and topological surfaces) exported as scalable vector graphics (`.svg`). 
+
+Due to GitHub's aggressive Content Security Policy (Camo proxy) restricting complex XML/SVG execution in the browser, these figures may occasionally fail to render or appear as blank spaces in the online view of `report.md`.
+
+**To view the full analytical report with all structural telemetry intact:**
+1. Clone or download this repository to your local machine.
+2. Open the project folder using **Obsidian**, **Visual Studio Code**, or any standard local Markdown engine. 
+3. All relative paths and high-resolution figures will render natively.
+
+
+---
+
 ### Repository Structure
 
 ```text
@@ -147,5 +160,6 @@ make run
 ├── pyproject.toml                      # The Architectural Blueprint (for pip install -e .)
 ├── requirements.txt                    # Strict pinned dependencies for Hugging Face deployment
 ├── LICENSE                             # MIT License
+├── report.md                           # The Methodology and Results (IMRAD)
 └── README.md                           # The Forensic Log: Project Mission and Constraints
 ```
