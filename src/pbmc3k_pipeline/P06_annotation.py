@@ -128,19 +128,26 @@ def orc_annotation(
                 adata.obs['manual_labels'] = adata.obs[macro_leiden].map(annotation_manual[macro_leiden])
                 adata.obs['human_CL_ID'] = adata.obs['manual_labels'].map(ontology_cl_id_dict_manual[macro_leiden])
             
-            if 'majority_voting' in adata.obs:
-                adata.obs['oracle_CL_ID'] = adata.obs['majority_voting'].map(ontology_cl_id_dict_manual[macro_leiden])
-                
-                # Drop NaNs to allow strict ARI comparison
-                valid_mask = adata.obs['human_CL_ID'].notna() & adata.obs['oracle_CL_ID'].notna()
-                if valid_mask.sum() > 0:
-                    ari_score = adjusted_rand_score(
-                        adata.obs.loc[valid_mask, 'human_CL_ID'].astype(str),
-                        adata.obs.loc[valid_mask, 'oracle_CL_ID'].astype(str)
-                    )
-                    adata.uns['Oracle_ARI_Score'] = float(ari_score)
-                    print(f"  -> Oracle Alignment Score (ARI): {ari_score:.3f}")   
+            # --- V3 GITHUB ISSUE: CELLTYPIST ORACLE ARI TEMPORARILY EXCISED ---
+                # if 'majority_voting' in adata.obs:
+                #     adata.obs['oracle_CL_ID'] = adata.obs['majority_voting'].map(ontology_cl_id_dict_manual[macro_leiden_key])
+                #
+                # valid_mask = adata.obs['human_CL_ID'].notna() & adata.obs['oracle_CL_ID'].notna()
+                # if valid_mask.sum() > 0:
+                #     ari_score = adjusted_rand_score(
+                #         adata.obs.loc[valid_mask, 'human_CL_ID'].astype(str),
+                #         adata.obs.loc[valid_mask, 'oracle_CL_ID'].astype(str)
+                #     )
+                #     adata.uns['Oracle_ARI_Score'] = float(ari_score)
+                #     print(f" -> Oracle Alignment Score (ARI): {ari_score:.3f}")
+                # ------------------------------------------------------------------
+
             
+            if '_index' in adata.obs.columns:
+                del adata.obs['_index']
+            if adata.obs.index.name == '_index':
+                adata.obs.index.name = None
+
             adata.write_h5ad(macro_path)
             del adata
             gc.collect()
@@ -187,20 +194,25 @@ def orc_annotation(
                 annotation_manual[active_leiden_col]
             )
                 adata.obs['human_CL_ID'] = adata.obs['manual_labels'].map(ontology_cl_id_dict_manual[active_leiden_col])
-
-            # Oracle Alignment Check
-            if 'majority_voting' in adata.obs:
-                adata.obs['oracle_CL_ID'] = adata.obs['majority_voting'].map(ontology_cl_id_dict_manual[active_leiden_col])
-                
-                valid_mask = adata.obs['human_CL_ID'].notna() & adata.obs['oracle_CL_ID'].notna()
-                if valid_mask.sum() > 0:
-                    ari_score = adjusted_rand_score(
-                        adata.obs.loc[valid_mask, 'human_CL_ID'].astype(str),
-                        adata.obs.loc[valid_mask, 'oracle_CL_ID'].astype(str)
-                    )
-                    adata.uns['Oracle_ARI_Score'] = float(ari_score)
-                    print(f"  -> Oracle Alignment Score (ARI): {ari_score:.3f}")
-
+                # --- V3 GITHUB ISSUE: CELLTYPIST ORACLE ARI TEMPORARILY EXCISED ---
+                # if 'majority_voting' in adata.obs:
+                #     adata.obs['oracle_CL_ID'] = adata.obs['majority_voting'].map(ontology_cl_id_dict_manual[active_leiden_col])
+                # 
+                # valid_mask = adata.obs['human_CL_ID'].notna() & adata.obs['oracle_CL_ID'].notna()
+                # if valid_mask.sum() > 0:
+                #     ari_score = adjusted_rand_score(
+                #         adata.obs.loc[valid_mask, 'human_CL_ID'].astype(str),
+                #         adata.obs.loc[valid_mask, 'oracle_CL_ID'].astype(str)
+                #     )
+                #     adata.uns['Oracle_ARI_Score'] = float(ari_score)
+                #     print(f" -> Oracle Alignment Score (ARI): {ari_score:.3f}")
+                # ------------------------------------------------------------------
+        
+        if '_index' in adata.obs.columns:
+            del adata.obs['_index']
+        if adata.obs.index.name == '_index':
+            adata.obs.index.name = None    
+        
         adata.write_h5ad(file_path)
         del adata
         gc.collect()
@@ -339,6 +351,16 @@ def main_artifact_labelling(main_h5ad_path: str, master_df_csv_path: str) -> str
     ml_ready_path = f"{base_name}_ML_Ready{ext}"
     
     print(f"[SEALED] Writing finalized Machine Learning Tensor to: {ml_ready_path}")
+    
+    if '_index' in adata_main.obs.columns:
+        del adata_main.obs['_index']
+    if adata_main.obs.index.name == '_index':
+        adata_main.obs.index.name = None
+    if '_index' in adata_main.var.columns:
+        del adata_main.var['_index']
+    if adata_main.var.index.name == '_index':
+        adata_main.var.index.name = None
+
     adata_main.write_h5ad(ml_ready_path)
     
     del adata_main
