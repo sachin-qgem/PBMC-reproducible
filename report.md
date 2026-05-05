@@ -307,12 +307,12 @@ Following initial QC, computational doublet detection (`doublet purge`) was exec
 
 Following filtering and doublet removal, the final dataset comprised `[5322]` high-quality cells and `[24865]` genes. To prevent data leakage and circular inference (double dipping) during downstream marker extraction, the filtered matrix was randomly bisected (`random_split_data`, seed 42), allocating 2,661 cells to the training set ($X_{train}$) and 2,661 cells to the projection holdout set ($X_{project}$).
 
-![[results/figures/p03_qc_filtering/scatter_pre_filter.svg]]
-![[results/figures/p03_qc_filtering/violin_pre_filter.svg]]
+![](results/figures/p03_qc_filtering/scatter_pre_filter.svg)
+![](results/figures/p03_qc_filtering/violin_pre_filter.svg)
 
-![[results/figures/p03_qc_filtering/scatter_post_filter.svg]]
-![[results/figures/p03_qc_filtering/violin_post_filter.svg]]
-![[results/figures/p03_qc_filtering/scrublet_score_distribution_doublet_distribution.svg]]
+![](results/figures/p03_qc_filtering/scatter_post_filter.svg)
+![](results/figures/p03_qc_filtering/violin_post_filter.svg)
+![](results/figures/p03_qc_filtering/scrublet_score_distribution_doublet_distribution.svg)
 
 
 ### 3.2 Dimensionality Reduction and Macro-Clustering
@@ -323,15 +323,15 @@ Following initial quality control, the dataset was processed to define the prima
 
 Prior to Principal Component Analysis (PCA), cell cycle scoring (`cell_cycle_check`) was performed to assess whether cell cycle phases were confounding transcriptomic variation. The maximum observed scores (S-phase max = `[0.6]`, G2M-phase max = `[0.4]`) indicated minimal phase-driven bias. To ensure clustering was driven by cell identity rather than technical or metabolic variance, `[1]` mitochondrial and ribosomal genes were explicitly excluded from the Highly Variable Gene (HVG) pool before it was subjected to PCA, which was computed on the remaining `[2499]` HVGs. An evaluation of the variance explained by each principal component (`evaluation of the PCA variance ratio / elbow plot`) determined that `[10]` principal components were optimal for capturing the biological signal while minimizing computational noise.
 
-![[results/figures/p04_clustering/umap_training_cell_cycle.svg]]
-![[results/figures/p04_clustering/pca_variance_ratio_training_file_.svg]]
+![](results/figures/p04_clustering/umap_training_cell_cycle.svg)
+![](results/figures/p04_clustering/pca_variance_ratio_training_file_.svg)
 
 **Graph-Based Clustering:**
 
 A k-nearest neighbor (kNN) graph and Uniform Manifold Approximation and Projection (UMAP) embeddings were generated (`knn_umap_leiden`). To define robust macro-cluster boundaries objectively, a systematic grid search of the nearest neighbors ($k$) and Leiden resolution ($r$) parameters was executed (`macro sweep`). By evaluating clustering stability across iterations (`mesa_audit`) during visual inspection of the parameter space via heat-map and contour plots confirmed this region as highly stable, consistently yielding `[5]` distinct macro-clusters, the optimal parameters were identified as $k=$ `[42]` and $r=$ `[0.16]`. This partitioned the dataset into `[5]` distinct macro-clusters.
 
-![[results/figures/p04_clustering/macro_thermodynamic_surface.svg]]
-![[results/figures/p04_clustering/macro_umap.svg]]
+![](results/figures/p04_clustering/macro_thermodynamic_surface.svg)
+![](results/figures/p04_clustering/macro_umap.svg)
 
 
 **Macro-Cluster Stability Evaluation:**
@@ -349,7 +349,7 @@ To assess the robustness of the resulting cluster boundaries, a bootstrapping pr
 - **Cluster 4:** `[0.948]` and 256 cells
    
 Visual inspection of the resulting projection overlap diagnostic plots confirmed a high degree of structural alignment between the reference ($N=2,661$) and projected ($N=2,661$) coordinates. This exact overlap physically demonstrates that the defined micro-cluster boundaries are highly stable and accurately represent the underlying biological topology.
-![[results/figures/p04_clustering/macro_leiden_Projection_Overlap.svg]]
+![](results/figures/p04_clustering/macro_leiden_Projection_Overlap.svg)
 ### 3.3 High-Resolution Micro-Clustering
 
 The `[5]` isolated macro-clusters were independently sub-clustered to identify finer cellular subpopulations (`micro sweep`). Parameter optimization (grid searches for $k$ and $r$) was performed iteratively for each macro-cluster, yielding a total of `[27]` distinct sub-clusters across the training dataset.
@@ -357,31 +357,31 @@ The `[5]` isolated macro-clusters were independently sub-clustered to identify f
 Bootstrapping (`jaccard scores`) was re-applied at the micro-level to evaluate boundary stability. The variance in Jaccard scores successfully differentiated between discrete terminal cell types (high stability, $>0.85$) and continuous developmental trajectories (moderate stability, $0.65 - 0.80$):
 
 - **Macro-State 0:** Locked at $k=$ `[33]`, $r=$ `[0.46]`. Yielded `[8]` sub-clusters. Minimum observed Jaccard stability: `[0.658]`.
-    ![[results/figures/p04_clustering/pca_variance_ratio_macro_leiden_0_.svg]]
-    ![[results/figures/p04_clustering/macro_leiden_0_thermodynamic_surface.svg]]
-    ![[results/figures/p04_clustering/macro_leiden_0_micro_umap.svg]]
-    ![[results/figures/p04_clustering/macro_leiden_0_micro_leiden_Projection_Overlap.svg]]
+    ![](results/figures/p04_clustering/pca_variance_ratio_macro_leiden_0_.svg)
+    ![](results/figures/p04_clustering/macro_leiden_0_thermodynamic_surface.svg)
+    ![](results/figures/p04_clustering/macro_leiden_0_micro_umap.svg)
+    ![](results/figures/p04_clustering/macro_leiden_0_micro_leiden_Projection_Overlap.svg)
 - **Macro-State 1:** Locked at $k=$ `[32]`, $r=$ `[0.68]`. Yielded `[5]` sub-clusters. Minimum observed Jaccard stability: `[0.797]`.
-    ![[results/figures/p04_clustering/pca_variance_ratio_macro_leiden_1_.svg]]
-    ![[results/figures/p04_clustering/macro_leiden_1_thermodynamic_surface.svg]]
-    ![[results/figures/p04_clustering/macro_leiden_1_micro_umap.svg]]
-    ![[results/figures/p04_clustering/macro_leiden_1_micro_leiden_Projection_Overlap.svg]]
+    ![](results/figures/p04_clustering/pca_variance_ratio_macro_leiden_1_.svg)
+    ![](results/figures/p04_clustering/macro_leiden_1_thermodynamic_surface.svg)
+    ![](results/figures/p04_clustering/macro_leiden_1_micro_umap.svg)
+    ![](results/figures/p04_clustering/macro_leiden_1_micro_leiden_Projection_Overlap.svg)
 - **Macro-State 2:** Locked at $k=$ `[35]`, $r=$ `[0.44]`. Yielded `[3]` sub-clusters. Minimum observed Jaccard stability: `[0.743]`.
-    ![[results/figures/p04_clustering/pca_variance_ratio_macro_leiden_2_.svg]]
-    ![[results/figures/p04_clustering/macro_leiden_2_thermodynamic_surface.svg]]
-    ![[results/figures/p04_clustering/macro_leiden_2_micro_umap.svg]]
-    ![[results/figures/p04_clustering/macro_leiden_2_micro_leiden_Projection_Overlap.svg]]
+    ![](results/figures/p04_clustering/pca_variance_ratio_macro_leiden_2_.svg)
+    ![](results/figures/p04_clustering/macro_leiden_2_thermodynamic_surface.svg)
+    ![](results/figures/p04_clustering/macro_leiden_2_micro_umap.svg)
+    ![](results/figures/p04_clustering/macro_leiden_2_micro_leiden_Projection_Overlap.svg)
 - **Macro-State 3:** Locked at $k=$ `[50]`, $r=$ `[1.2]`. Yielded `[7]` sub-clusters. Minimum observed Jaccard stability: `[0.660]`.
-    ![[results/figures/p04_clustering/pca_variance_ratio_macro_leiden_3_.svg]]
-    ![[results/figures/p04_clustering/macro_leiden_3_thermodynamic_surface.svg]]
-    ![[results/figures/p04_clustering/macro_leiden_3_micro_umap.svg]]
-    ![[results/figures/p04_clustering/macro_leiden_3_micro_leiden_Projection_Overlap.svg]]
+    ![](results/figures/p04_clustering/pca_variance_ratio_macro_leiden_3_.svg)
+    ![](results/figures/p04_clustering/macro_leiden_3_thermodynamic_surface.svg)
+    ![](results/figures/p04_clustering/macro_leiden_3_micro_umap.svg)
+    ![](results/figures/p04_clustering/macro_leiden_3_micro_leiden_Projection_Overlap.svg)
     
 - **Macro-State 4:** Locked at $k=$ `[25]`, $r=$ `[0.5]`. Yielded `[4]` sub-clusters. Minimum observed Jaccard stability: `[0.756]`.
-	![[results/figures/p04_clustering/pca_variance_ratio_macro_leiden_4_.svg]]
-	![[results/figures/p04_clustering/macro_leiden_4_thermodynamic_surface.svg]]
-	![[results/figures/p04_clustering/macro_leiden_4_micro_umap.svg]]
-	![[results/figures/p04_clustering/macro_leiden_4_micro_leiden_Projection_Overlap.svg]]
+	![](results/figures/p04_clustering/pca_variance_ratio_macro_leiden_4_.svg)
+	![](results/figures/p04_clustering/macro_leiden_4_thermodynamic_surface.svg)
+	![](results/figures/p04_clustering/macro_leiden_4_micro_umap.svg)
+	![](results/figures/p04_clustering/macro_leiden_4_micro_leiden_Projection_Overlap.svg)
 
 ### 3.4 Differential Gene Expression and Marker Extraction
 
@@ -427,18 +427,18 @@ Following marker gene extraction, biological identities were assigned to the ide
 #### 3.5.1 Phenotype Annotation and Cell Ontology Mapping
 
 Human-derived biological annotations, guided by the statistical marker profiles (Section 3.4), were systematically injected into the dataset metadata (`orc_annotation`). To ensure interoperability and standardization, all micro-state annotations were strictly mapped to the formal Cell Ontology (CL) reference structure.
-![[results/figures/p05_top_markers/matrixplot__macro_leiden_top_genes.svg]]
-![[results/figures/p05_top_markers/dotplot__macro_leiden_top_genes.svg]]
+![](results/figures/p05_top_markers/matrixplot__macro_leiden_top_genes.svg)
+![](results/figures/p05_top_markers/dotplot__macro_leiden_top_genes.svg)
 
 The hierarchical annotation of the dataset is detailed below:
 
 **Macro-Cluster 0: `[T-Cell Lineage (CL:0000084)]**`
 
 - **Macro Decision Factor:** `[Universal expression of the canonical T-cell transcription factor BCL11B, coupled with high baseline expression of IL7R and CAMK4. The cluster was topologically partitioned from Macro-Cluster 2 despite shared baseline transcription, evidenced by a moderate (0.4 mean) expression of CCR4, SNED1, and NECTIN3.]`.
-	    ![[results/figures/p05_top_markers/matrixplot__macro_leiden_0_micro_leiden_top_genes.svg]]
-	    ![[results/figures/p05_top_markers/dotplot__macro_leiden_0_micro_leiden_top_genes.svg]]
-	    ![[results/figures/p05_top_markers/matrixplot__absence_audit_macro_0.svg]]
-	    ![[results/figures/p05_top_markers/matrixplot__curated_genes_audit_widespan_macro_leiden_0_micro_leiden.svg]]
+	    ![](results/figures/p05_top_markers/matrixplot__macro_leiden_0_micro_leiden_top_genes.svg)
+	    ![](results/figures/p05_top_markers/dotplot__macro_leiden_0_micro_leiden_top_genes.svg)
+	    ![](results/figures/p05_top_markers/matrixplot__absence_audit_macro_0.svg)
+	    ![](results/figures/p05_top_markers/matrixplot__curated_genes_audit_widespan_macro_leiden_0_micro_leiden.svg)
 	    
     - **Micro-Cluster 0.0:** `[Naive T-Cell (CL:0000898)]`
         
@@ -476,10 +476,10 @@ The hierarchical annotation of the dataset is detailed below:
 **Macro-Cluster 1: `[Myeloid Lineage (CL:0000763)]**`
 
 - **Macro Decision Factor:** `[Universal expression of the myeloid master transcription factor SPI1, coupled with high baseline expression of the canonical myeloid markers LYZ and CLEC7A. The absolute transcriptomic silencing of all foreign macro-lineage markers confirms a definitive, discrete boundary isolating the mononuclear phagocyte compartment.]`.
-    ![[results/figures/p05_top_markers/matrixplot__macro_leiden_1_micro_leiden_top_genes.svg]]
-    ![[results/figures/p05_top_markers/dotplot__macro_leiden_1_micro_leiden_top_genes.svg]]
-    ![[results/figures/p05_top_markers/matrixplot__absence_audit_macro_1.svg]]
-    ![[results/figures/p05_top_markers/matrixplot__curated_genes_audit_widespan_macro_leiden_1_micro_leiden.svg]]
+    ![](results/figures/p05_top_markers/matrixplot__macro_leiden_1_micro_leiden_top_genes.svg)
+    ![](results/figures/p05_top_markers/dotplot__macro_leiden_1_micro_leiden_top_genes.svg)
+    ![](results/figures/p05_top_markers/matrixplot__absence_audit_macro_1.svg)
+    ![](results/figures/p05_top_markers/matrixplot__curated_genes_audit_widespan_macro_leiden_1_micro_leiden.svg)
 	- **Micro-Cluster 1.0:** `[Non-Classical (CD16+) Patrolling Monocyte (CL:0002057)]`
         
 		- **Decision Factor:** `[Developmental continuity with the mature myeloid manifold is strictly maintained through the robust, retained expression of the terminal differentiation factor ZEB2 and the ubiquitous protease inhibitor CST3, anchored by basal canonical pathways (high FTL, moderate CD74). However, the mathematical isolation of this specific sub-state is driven by the primary spatial variance of FCGR3A (CD16), definitively partitioning it from the classical monocyte baseline. This receptor transition is coupled with the distinct upregulation of the trafficking mediator FAM117B and a low-amplitude, high-variance expression of the cytoskeletal driver RHOC. This specific coordinate configuration isolates a mature, non-classical monocyte compartment actively structurally poised for endothelial patrolling and cellular motility.]`.
@@ -504,10 +504,10 @@ The hierarchical annotation of the dataset is detailed below:
 **Macro-Cluster 2: `[T-Cell Sub-Lineage (CL:0000084)]**`
 
 - **Macro Decision Factor:** `[High expression of IL7R, coupled with moderate baseline expression of CAMK4 and BCL11B, establishes a shared lymphoid origin with Macro-Cluster 0. However, this population was mathematically partitioned into a discrete macro-state due to the exclusive, high-level upregulation of the homing receptor CCR4, alongside SNED1 and NECTIN3. The complete absence of myeloid or other foreign lineage markers confirms this boundary represents a distinct, specialized T-cell sub-compartment (indicative of a polarized or regulatory state) rather than a technical doublet.]`.
-    ![[results/figures/p05_top_markers/matrixplot__macro_leiden_2_micro_leiden_top_genes.svg]]
-    ![[results/figures/p05_top_markers/dotplot__macro_leiden_2_micro_leiden_top_genes.svg]]
-    ![[results/figures/p05_top_markers/matrixplot__absence_audit_macro_2.svg]]
-    ![[results/figures/p05_top_markers/matrixplot__curated_genes_audit_widespan_macro_leiden_2_micro_leiden.svg]]
+    ![](results/figures/p05_top_markers/matrixplot__macro_leiden_2_micro_leiden_top_genes.svg)
+    ![](results/figures/p05_top_markers/dotplot__macro_leiden_2_micro_leiden_top_genes.svg)
+    ![](results/figures/p05_top_markers/matrixplot__absence_audit_macro_2.svg)
+    ![](results/figures/p05_top_markers/matrixplot__curated_genes_audit_widespan_macro_leiden_2_micro_leiden.svg)
     - **Micro-Cluster 2.0:** `[Central Memory CD4+ T-Cell (CL:0000904)]`
         
         - **Decision Factor:** `[The structural foundation of this state is defined by the maximal expression of the lineage-defining co-receptor CD4, mathematically isolating it within the helper/regulatory T-cell manifold. Topological derivation proves the exit from the pristine naive phase via the targeted attenuation of the homeostatic anchors IL7R (dropping to ~2.0) and CAMK4 (dropping to 1.0), confirming an antigen-experienced, memory timeline. The discrete mathematical boundary of this sub-cluster is governed by the simultaneous high expression of the primary co-stimulatory receptor CD28—priming the cell for secondary expansion—and the immunophilin FKBP5. The massive upregulation of FKBP5 dictates active, endogenous regulation of glucocorticoid receptor sensitivity, structurally defining a polarized, tissue-homing memory cell that is thermodynamically enforcing strict threshold checks against premature inflammatory activation.]`.
@@ -524,10 +524,10 @@ The hierarchical annotation of the dataset is detailed below:
 **Macro-Cluster 3: `[B-Cell Lineage (CL:0000236)]**`
 
 - **Macro Decision Factor:** `[High, universal expression of the canonical B-cell markers BANK1 and IGKC, alongside COBLL1, dictates a definitive commitment to the B-cell lineage. The cluster exhibits complete transcriptomic silencing of myeloid and foundational T-cell drivers. However, a moderate baseline expression of SNED1 (shared with Macro-Cluster 2) was preserved, indicating that while the algorithm mathematically isolated this independent B-cell macro-state, it accurately retained the continuous transcriptomic edges between the broader lymphoid sub-populations.]`.
-    ![[results/figures/p05_top_markers/matrixplot__macro_leiden_3_micro_leiden_top_genes.svg]]
-    ![[results/figures/p05_top_markers/dotplot__macro_leiden_3_micro_leiden_top_genes.svg]]
-    ![[results/figures/p05_top_markers/matrixplot__absence_audit_macro_3.svg]]
-    ![[results/figures/p05_top_markers/matrixplot__curated_genes_audit_widespan_macro_leiden_3_micro_leiden.svg]]
+    ![](results/figures/p05_top_markers/matrixplot__macro_leiden_3_micro_leiden_top_genes.svg)
+    ![](results/figures/p05_top_markers/dotplot__macro_leiden_3_micro_leiden_top_genes.svg)
+    ![](results/figures/p05_top_markers/matrixplot__absence_audit_macro_3.svg)
+    ![](results/figures/p05_top_markers/matrixplot__curated_genes_audit_widespan_macro_leiden_3_micro_leiden.svg)
     - **Micro-Cluster 3.0:** `[Resting / Naive B-Cell (CL:0000788)]`
         
         - **Decision Factor:** `[Structural anchorage to the mature B-cell manifold is definitively established by the retained, high-expression bridges of the canonical lineage markers MS4A1 (CD20) and CD79A, alongside the critical peripheral survival receptor TNFRSF13C (BAFF-R). The basal signaling readiness of this cell is maintained by moderate expression of the receptor-associated kinase LYN and massive accumulation of the MHC Class II invariant chain (CD74 at 3.6). The mathematical isolation of this discrete phase is governed by the high-variance transcription of SOX5—a master regulator that acts as a thermodynamic padlock to actively repress terminal differentiation and enforce strict cellular quiescence. Supported by an atypical paracrine IL7 signature, this coordinate space mathematically defines a pristine, immunologically uncommitted Resting Naive B-Cell poised for initial antigen encounter.]`.
@@ -556,10 +556,10 @@ The hierarchical annotation of the dataset is detailed below:
 **Macro-Cluster 4: `[Natural Killer (NK) Cell Lineage (CL:0000623)]**`
 
 - **Macro Decision Factor:** `[High, universal expression of the cytotoxic effector molecules GZMB and NKG7, alongside the chemokine CCL4, establishes a definitive cytotoxic profile. Crucially, the absolute transcriptomic silencing of foundational T-cell lineage drivers (e.g., BCL11B) mathematically and biologically isolates this population as the innate Natural Killer (NK) cell lineage, successfully partitioning it from adaptive cytotoxic T-cell states]`.
-    ![[results/figures/p05_top_markers/matrixplot__macro_leiden_4_micro_leiden_top_genes.svg]]
-    ![[results/figures/p05_top_markers/dotplot__macro_leiden_4_micro_leiden_top_genes.svg]]
-    ![[results/figures/p05_top_markers/matrixplot__absence_audit_macro_4.svg]]
-    ![[results/figures/p05_top_markers/matrixplot__curated_genes_audit_widespan_macro_leiden_4_micro_leiden.svg]]
+    ![](results/figures/p05_top_markers/matrixplot__macro_leiden_4_micro_leiden_top_genes.svg)
+    ![](results/figures/p05_top_markers/dotplot__macro_leiden_4_micro_leiden_top_genes.svg)
+    ![](results/figures/p05_top_markers/matrixplot__absence_audit_macro_4.svg)
+    ![](results/figures/p05_top_markers/matrixplot__curated_genes_audit_widespan_macro_leiden_4_micro_leiden.svg)
     - **Micro-Cluster 4.0:** `[Terminally Differentiated Cytotoxic Effector / Core Manifold (CL:4030002)]`
         
         - **Decision Factor:** `[Topological derivation reveals this coordinate space as the mathematical centroid and unadulterated baseline of the cytotoxic macro-manifold. The discrete isolation of this cluster is characterized by an absence of novel primary variance drivers, indicating it serves as the foundational operating system for the surrounding continent. The physical reality of this state is defined exclusively by its high-amplitude topological anchors: the master transcription factor ZEB2 (3.0) acts as a thermodynamic padlock enforcing terminal differentiation and preventing memory reversion. This locked state is structurally coupled with an apex cytolytic arsenal, defined by the co-expression of the granule stabilizer NKG7 (2.5) and the membrane-breaching protein Granulysin (GNLY at 2.0), alongside the inflammatory chemokine CCL5. This exact thermodynamic signature mathematically defines the core circulating pool of terminally differentiated, fully armed cytotoxic effector cells.]`.
@@ -598,20 +598,20 @@ This operation exported the final deployment asset: `[ pbmc3k_qc_ML_Ready.h5ad]`
 The following log verifies the successful ingestion of the filtered feature-barcode matrix and the subsequent generation of the Leiden-based lineage maps.
 
 - **Evidence:** 
-    ![[results/logs/execution_evidence/EVT_1.png]]
-    ![[results/logs/execution_evidence/EVT_2.png]]
-    ![[results/logs/execution_evidence/EVT_3.png]]
-    ![[results/logs/execution_evidence/EVT_4.png]]
+    ![](results/logs/execution_evidence/EVT_1.png)
+    ![](results/logs/execution_evidence/EVT_2.png)
+    ![](results/logs/execution_evidence/EVT_3.png)
+    ![](results/logs/execution_evidence/EVT_4.png)
 
 #### 3.6.2 Phase III: Marker Extraction and JSON Ledger Sealing
 
 Verification of the Wilcoxon Rank-Sum execution and the atomic sealing of the annotation and ontology ledgers to the physical disk.
 
 - **Evidence:** 
-    ![[results/logs/execution_evidence/EVT_5.png]]
-    ![[results/logs/execution_evidence/EVT_6.png]]
-    ![[results/logs/execution_evidence/EVT_7.png]]
-    ![[results/logs/execution_evidence/EVT_8.png]]
+    ![](results/logs/execution_evidence/EVT_5.png)
+    ![](results/logs/execution_evidence/EVT_6.png)
+    ![](results/logs/execution_evidence/EVT_7.png)
+    ![](results/logs/execution_evidence/EVT_8.png)
 
 
 ------------
