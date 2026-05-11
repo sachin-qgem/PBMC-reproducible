@@ -11,7 +11,7 @@ pinned: false
 ---
 
 - # PBMC-reproducible: Cybernetic Clustering and markers Engine
-- [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19335670.svg)](https://doi.org/10.5281/zenodo.19335670)
+- [![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.19335670-blue)](https://doi.org/10.5281/zenodo.19335670)
 - [![ORCID](https://img.shields.io/badge/ORCID-0009--0000--2744--6131-A6CE39?logo=orcid&logoColor=white)](https://orcid.org/0009-0000-2744-6131)
 - [![Report](https://img.shields.io/badge/Report-PDF-darkred?logo=adobeacrobatreader&logoColor=white)](report.pdf) [View the Full Analytical Thesis](report.pdf) 
 - [![Hugging Face Space](https://img.shields.io/badge/🤗_Hugging_Face-Live_Deployment-FFD21E)](https://huggingface.co/spaces/YOUR_USERNAME/YOUR_SPACE_NAME) [Interact with the Live Pipeline](https://huggingface.co/spaces/sachin-qgemai-alpha/pbmc_single_healthy_donor)
