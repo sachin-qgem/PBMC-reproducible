@@ -25,10 +25,10 @@ We are auditing the standard pipeline to validate our learnt theory. We assume d
 ---
 ### The Phases:
 - #### Phase I(P03_qc_filtering): 
-    - 5-MAD outlier detection of `Mito %`
+    - 5-MAD outlier detection of `Mito %` and `Ribo %` From Broad Institute 
     - Doublets Scrubs
     - Dormant genes removal (genes expressed in less than 3 cells)
-    - Cells expressed in less than 200 genes removal
+    - Cells expressed in less than 5-MAD genes removal
 - #### Phase II(P04_clustering):
     - Cell Cycle check
     - Double Dipping (random split main into training and projected 50-50) and data leakage addressed 
