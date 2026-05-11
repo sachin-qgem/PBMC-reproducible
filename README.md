@@ -23,46 +23,69 @@ pinned: false
 This is NOT a tutorial. This is a **Forensic Reconstruction**.  
 We are auditing the standard pipeline to validate our learnt theory. We assume default automated pipelines are mathematically flawed and require rigorous computational proof at every structural node.
 ---
-### The Phases:
-- #### Phase I(P03_qc_filtering): 
-    - 5-MAD outlier detection of `Mito %` and `Ribo %` From Broad Institute 
-    - Doublets Scrubs
-    - Dormant genes removal (genes expressed in less than 3 cells)
-    - Cells expressed in less than 5-MAD genes removal
-- #### Phase II(P04_clustering):
-    - Cell Cycle check
-    - Double Dipping (random split main into training and projected 50-50) and data leakage addressed 
-    - Pearson Residuals, PCA, HVG , recal after every split of dataset in new space (of Training dataset only).
-    - KNN, UMAP, Leiden clustering
-    - Topological Mesa audit for a dynamic and informed decision for choosing optimal K-neighbors and Leiden resolution
-    - divide and save dataset based on macro or micro clusters
-    - Audits the PCA variance geometry to determine if a cluster is a homogenous biological state (an arc) or contains structural subpopulations (an elbow).
-    - casting projectable dataset on the clustered training dataset
-- #### Phase III(P05_top_markers):
-    - wilcoxon rank sum test stat method.
-    - filter the `pvals_adj< 0.05` and `logfoldchange < 10.0` (a gene that was only expressed in one single cell out of a thousand. It is statistical ghost data.)
-    - calculate the `neg_log10_pvals_adj`
-    - local 93 percentile of every cluster for neg_log10_pvals_adj
-    - `['violin_delta'] = ['pct_nz_group'] - ['pct_nz_reference']`
-    - sort values based on voilen_delta
-    - take top 3 or 5 for every cluster
-    - Extracts top markers from all foreign matrices and projects them onto the target matrix to prove lineage isolation (Epigenetic Silencing).
-    - Executes automated reference-based annotation using CellTypist.
-    - Validates the matrix against a pre-curated JSON dictionary of canonical markers from Theis Lab.
-- #### Phase IV(P06_annotation):
-    - Injects human-verified biological annotations and standard Cell Ontology (CL) IDs into the localized Macro and Micro matrices.
-    - Calculates alignment scores against automated reference models.
-    - Extracts cell barcodes and injected labels from all isolated matrices and concatenates them into a master CSV ledger. Resolves barcode collisions by prioritizing the most recent execution state.
-    - Ingests the master CSV ledger and maps the final biological identities onto the raw, un-split global matrix. Exports the final ML-Ready artifact.
+### The Phases of Execution:
+
+#### ▶ Phase I: Quality Control & Preprocessing
+
+- **Adaptive MAD Filtering**: Removal of low-quality cells and technical artifacts by applying a strict Median Absolute Deviation (MAD) of 5 to Mito % and total expressed genes. Ribosomal fractions are calculated but not filtered out at this stage. Removing them early would artificially reduce total cellular counts, skewing the expected variance baseline required for Pearson residuals in downstream steps.
+    
+- **Doublet Removal**: Identification and filtering of synthetic multi-cell droplets using Scrublet to prevent artificial clustering between distinct cell types.
+    
+- **Gene Sparsity Filtering**: Removal of uninformative or sparsely expressed genes (enforcing a minimum threshold of detection in ≥ 3 cells).
+    
+- **Library Size Normalization:** Log1p-transformation and target-sum scaling (1e4) of the raw count matrix to normalize cellular sequencing depth.
+    
+
+#### ▶ Phase II: Structural Topology &  Clustering
+
+- **Data Splitting (Train/Project)**: A strict 50/50 split of the dataset into training and holdout (projection) sets to prevent data leakage and circular inference during downstream validation.
+    
+- **Iterative Dimensionality Reduction & HVG Selection**: Pearson residuals, highly variable genes (HVGs), and PCA are recalculated exclusively on the sub-matrices. Crucially, HVGs are computed on the full gene set to establish an accurate variance baseline. Only after this calculation are mitochondrial and ribosomal genes explicitly masked from the HVG pool prior to PCA, preventing housekeeping genes from driving spatial clustering.
+    
+- **Cell Cycle Scoring & Orthogonal Projection:** Auditing S-phase and G2M-phase genes to ensure topological clustering is driven by core phenotypic identity, not transient mitotic states.
+    
+- **Hyperparameter Grid Search (Stability Audit**): Evaluating cluster stability using Jaccard survival scores (20 iterations, 0.8 subsample) and structural Modularity (Q) across a combinatorial grid of KNN and Leiden resolutions to deterministically lock boundaries without human bias.
+    
+- **PCA Variance Analysis**: Examining the PCA variance ratio to distinguish continuous developmental gradients from discrete sub-populations, determining if further sub-clustering is necessary.
+    
+- **Holdout Projection**: Projecting the unseen 50% holdout data onto the established training reference (using Scanpy Ingest) to validate cluster boundary generalization.
+    
+
+#### ▶ Phase III: Differential Gene Expression (DGE) & Marker Extraction
+
+- **Wilcoxon Rank-Sum Test**: Computing cluster-specific marker genes. Clusters with fewer than 10 cells are excluded from DGE to prevent statistically unreliable results.
+    
+- **Log-Fold Boundaries:** Isolating significant markers by strictly enforcing `logfoldchanges > 1.0` while dynamically capping extreme dropout artifacts (`logfoldchanges < 10.0`), alongside a baseline significance of `pvals_adj < 0.05`.
+    
+- **Adaptive P-value Thresholding**: Applying a local 93.75th-percentile cutoff to p-values to isolate the most significant markers per cluster, with a fallback minimum of 3 genes to ensure small clusters retain defining markers.
+    
+- **Spatial Exclusivity Scoring (`violin_delta`):** Mathematically isolating the purest marker genes by calculating the expression differential (`pct_nz_group` - `pct_nz_reference`).
+    
+- **Cross-Cluster Marker Auditing**: Comparing top markers against neighboring micro-clusters to verify lineage separation and distinct expression profiles.
+    
+- **Canonical Ledger Validation:** Auditing machine-derived markers against a pre-curated JSON dictionary of established biological truths (e.g., Theis Lab signatures).
+    
+
+#### ▶ Phase IV: Annotation & Data Recombination
+
+- **Manual Ontology Injection:** Mapping mathematically validated gene signatures to standard Cell Ontology (CL) IDs within the isolated Macro and Micro matrices.
+    
+- **Automated Annotation Validation**: Comparing manual annotations against predictions from pre-trained, supervised Neural Networks (`CellTypist` Immune models).
+    
+- **Concordance Scoring:** Calculating the Adjusted Rand Index (ARI) between the human labels and the machine's majority voting logic to prove structural agreement.
+    
+- **Metadata Aggregation:** Consolidating cell barcodes and annotations from all sub-matrices into a master CSV, using a 'latest-execution-wins' logic to resolve duplicate barcodes.
+    
+- **Global Tensor Recombination:** Ingesting the master FAIR-compliant CSV ledger and mapping the final biological identities back onto the raw, un-split global matrix. Unannotated or failed cells are programmatically standardized to `Unknown/Filtered` before exporting the final Machine-Learning-Ready (`.h5ad`) artifact.
 
 ---
 
-### The Architectural Upgrades
+### Architectural Enhancements
 
-This engine abandons the "blind execution" of standard pipelines (e.g., default Seurat/Scanpy). It introduces three strict cybernetic fail-safes:
-1. **The Topographical Mesa Audit:** Phase II does not accept hardcoded Leiden resolutions. It generates a dual-pane thermodynamic contour map of Modularity ($\text Q$) across $\text k$-neighbors and $r$-resolution, forcing the human to anchor the algorithm strictly on flat biological continuous gradients (Mesas) rather than volatile mathematical phase-transitions (Cliffs).
-2. **Jaccard Sub-Sampling:** Every human coordinate lock is forensically audited by randomly deleting 20% of the cells across 20 iterations to prove cluster stability.
-3. **Thermodynamic Terminal State Check**: Audits the PCA variance geometry to determine if a cluster is a homogenous biological state (an arc) or contains structural subpopulations (an elbow).
+This pipeline improves upon the default workflows of standard single-cell tools (e.g., Seurat/Scanpy) by introducing three rigorous computational validation steps:
+1. **Hyperparameter Grid Search (Modularity Audit):** Instead of relying on arbitrary Leiden resolutions, Phase II generates a grid-search contour map of Modularity (Q) across varying k-neighbors and resolutions. This guides parameter selection toward stable modularity plateaus rather than volatile transition zones, ensuring mathematically robust cluster boundaries.
+2. **Jaccard Bootstrapping:** Chosen clustering parameters are empirically validated by randomly subsampling 80% of the cells across 20 iterations to quantify and prove cluster stability.
+3. **Sub-Clustering Stopping Criterion:** Evaluates the PCA variance ratio to dynamically determine whether a cluster represents a homogeneous biological population (terminal state) or contains further substructure requiring additional micro-clustering.
 
 ---
 
@@ -119,6 +142,7 @@ Due to GitHub's aggressive Content Security Policy (Camo proxy) restricting comp
 1. Clone or download this repository to your local machine.
 2. Open the project folder using **Obsidian**, **Visual Studio Code**, or any standard local Markdown engine. 
 3. All relative paths and high-resolution figures will render natively.
+4. OR a report.pdf File is also there in the repo
 
 
 ---
