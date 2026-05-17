@@ -4,13 +4,13 @@
 
 The human immune system operates as a heterogeneous population of specialized cellular phenotypes. Peripheral Blood Mononuclear Cells (PBMCs) provide a direct, accessible window into this circulating network, comprising lymphocytes (T cells, B cells, NK cells) and myeloid lineages (monocytes, dendritic cells). Historically, the resolution of these populations relied on restricted surface-protein markers. Single-cell RNA-sequencing (scRNA-seq) permits the quantification of the entire transcriptome within individual droplets.
 
-, scRNA-seq generates a gene expression count matrix.. Within this high-dimensional data structure, distinct cell types group into observable clusters. Downstream analysis groups cells into clusters.
+scRNA-seq generates a gene expression count matrix. Within this high-dimensional data structure, distinct cell types group into observable clusters. Downstream analysis groups cells into clusters.
 
 ### 1.2 Limitations of Standard Clustering Methodologies
 
 While the scRNA-seq provides high-resolution transcriptomic data, the computational methodologies used to resolve the resulting matrices remain subject to technical limitations. Single-cell data is subject to technical noise: ambient RNA leakage from lysed cells, stochastic droplet multiplets (doublets), and extreme variance in sequencing capture efficiency.
 
-Rather than addressing this noise with standard statistical models, conventional downstream pipelines frequently operate as unsupervised models requiring arbitrary parameterization." They rely on arbitrary parameter selection—such as guessing the number of nearest neighbors ($k$) or community resolution ($r$)—until the output visually aligns with human expectation. Iterative parameter adjustment introduces subjective bias.
+Rather than addressing this noise with standard statistical models, conventional downstream pipelines frequently operate as unsupervised models requiring arbitrary parameterization. They rely on arbitrary parameter selection—such as guessing the number of nearest neighbors ($k$) or community resolution ($r$)—until the output visually aligns with human expectation. Iterative parameter adjustment introduces subjective bias.
 
 Standard workflows are susceptible to the following statistical errors:
 
