@@ -184,7 +184,7 @@ def apply_filter(adata: ad.AnnData) -> ad.AnnData:
     ad.AnnData
         The filtered, structurally sound expression matrix.
     """
-    print("[INFO] Executing 5-MAD cell purge and dormant gene removal...")
+    print("[INFO] Applying 5-MAD thresholding for cell filtering. Removing genes with <3 expressing cells.")
     
     adata.obs["outlier_n_genes_by_counts"] = is_outlier(
         adata, "n_genes_by_counts", 5, "both"
@@ -224,7 +224,7 @@ def execute_doublets_purge(adata: ad.AnnData) -> ad.AnnData:
     ad.AnnData
         The matrix strictly cleansed of multi-cell droplets.
     """
-    print("\n[INFO] Igniting Scrublet Chimera Simulation Engine...")
+    print("\n[INFO] Initializing Scrublet for synthetic doublet simulation...")
     
     # Scanpy's native Scrublet generates thousands of synthetic doublets,
     # projects them, and flags real cells that occupy the same topological space.
@@ -233,7 +233,7 @@ def execute_doublets_purge(adata: ad.AnnData) -> ad.AnnData:
     doublet_mask = adata.obs['predicted_doublet']
     doublet_count = doublet_mask.sum()
     
-    print(f"[AUDIT] Detected and flagged {doublet_count} Doublet Particles.")
+    print(f"[INFO] Flagged {doublet_count} potential doublets.")
     
     # Generate visual telemetry of the doublet score distribution
     sc.pl.scrublet_score_distribution(
@@ -245,7 +245,7 @@ def execute_doublets_purge(adata: ad.AnnData) -> ad.AnnData:
     # The Thermodynamic Vaporization
     adata_sterile = adata[~doublet_mask].copy()
     
-    print(f"[SUCCESS] Doublets vaporized. Sterile Dimensions: {adata_sterile.n_obs} cells x {adata_sterile.n_vars} genes.")
+    print(f"[INFO] Matrix filtered. New dimensions: {adata_sterile.n_obs} cells x {adata_sterile.n_vars} genes.")
     
     return adata_sterile
 
@@ -272,9 +272,7 @@ def orch_qc_filtering(
     -------
     None
     """
-    print("\n===========================================================")
-    print(" PHASE I (QUALITY CONTROL INITIATION)")
-    print("===========================================================")
+    print("\n[INFO] Starting Phase I: Quality Control and Filtering")
     
     adata = load_evidence(mtx_path)
     adata = calculate_vital_signs(adata)
@@ -301,7 +299,7 @@ def orch_qc_filtering(
         "total_counts", "n_genes_by_counts", "pct_counts_mt"
     )
     
-    print(f"[SEALED] Writing Golden Copy to {pbmc3k_qc_h5ad_path}...")
+    print(f"[INFO] Saving filtered matrix to {pbmc3k_qc_h5ad_path}")
     adata_filtered.write_h5ad(pbmc3k_qc_h5ad_path, compression='gzip')
     
     del adata, adata_filtered, adata_temp
@@ -326,7 +324,7 @@ def main():
         pbmc3k_qc_h5ad_path=pbmc3k_qc_h5ad_path
     )
     
-    print("\nPHASE I COMPLETE. MATRIX READY FOR FRACTURE.")
+    print("\n[INFO] Phase I complete. Matrix ready for downstream subsetting.")
 
 if __name__ == "__main__":
     main()

@@ -370,7 +370,7 @@ def topographical_mesa_audit(
     import gc
     
     label = key_name.upper()
-    print(f"\n[{label}] Initiating Topographical Mesa Audit (Pure Modularity)...")
+    print(f"\n[INFO] Initiating grid search optimization for Leiden modularity ({label})...")
     
     adata_raw = sc.read_h5ad(filepath)
     n_cells = adata_raw.n_obs
@@ -460,7 +460,7 @@ def topographical_mesa_audit(
 
     plt.tight_layout()
     
-    svg_path = f"{plt_fig_dir}/{key_name}_thermodynamic_surface.svg"
+    svg_path = f"{plt_fig_dir}/{key_name}_grid_search_surface.svg"
     plt.savefig(svg_path, format="svg")
     plt.close()
 
@@ -598,13 +598,13 @@ def divide_and_save_dataset_based_on_macro_or_micro_clusters(
         adata_subset = adata[barcodes].copy()
         if  enforce_thermodynamic_audit:
             if is_thermodynamic_terminal_state(adata_subset):
-                print(f" [INFO] ⚠️ TERMINAL STATE LOCKED: Cluster {cluster_id} (N={adata_subset.n_obs}). Isotropic variance detected.")
+                print(f"[INFO] Homogeneous variance detected in Cluster {cluster_id} (N={adata_subset.n_obs}). Halting further subsetting.")
                 print(" [SUGGESTION] If a continuous transition is suspected, consider Trajectory Inference methods.")
                 lineage_key = f"{lineage_key}_Terminal_State"
             else:
                 print(f"[INFO] Cluster {cluster_id} (N={adata_subset.n_obs}): Structural elbow detected. Approved for Topographical Sweep.")
         else:
-            print(f"[INFO] Projection Protocol: Fracturing Cluster {cluster_id} without thermodynamic audit.")   
+            print(f"[INFO] Subsetting Cluster {cluster_id} without variance evaluation.")   
         new_filename = f"{base_name}_{lineage_key}.h5ad"
         new_filepath_obj = directory / new_filename
         
@@ -648,7 +648,7 @@ def npr_hvg_pca_recal(filepath: str, keys: str) -> None:
         ribo_mask = adata.var['ribo']
 
         exiled_count = (adata.var['highly_variable'] & (mt_mask | ribo_mask)).sum()
-        print(f"[AUDIT] Exiling {exiled_count} structural/apoptotic vectors from PCA space.")
+        print(f"[INFO] Removing {exiled_count} mitochondrial/ribosomal genes from highly variable set prior to PCA.")
 
         adata.var.loc[mt_mask | ribo_mask, 'highly_variable'] = False
         with warnings.catch_warnings():
@@ -772,7 +772,7 @@ def execute_macro_sweep(h5ad_path: str, save_folder_path: str) -> dict:
     """
     sc.settings.figdir = str(plt_fig_dir)
     print("\n===========================================================")
-    print(" INITIATING PHASE II - STEP 1: THERMODYNAMIC SWEEP")
+    print("[INFO] Initiating grid search over parameters k and r.")
     print("===========================================================")
     
     file_path_dict = random_split_data(h5ad_path, save_folder_path)
@@ -941,7 +941,7 @@ def seal_phase_II_pipeline(
     """
     Step 5: Compiles all human-approved dictionaries and executes Orchestrator B projection.
     """
-    print("\n[SYSTEM] Sealing Pipeline. Recombining topologies...")
+    print("\n[INFO] Saving pipeline states and generating projected annotations.")
     dict_A = {
         'main_pca_artifact_path': h5ad_path,
         'writing_files_folder_path': save_folder_path,

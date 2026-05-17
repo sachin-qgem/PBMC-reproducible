@@ -96,7 +96,7 @@ def rank_gene_groups_wilcoxon(
     dict
         The updated annotation ledger containing newly extracted null states.
     """
-    print(f"[AUDIT] Executing Wilcoxon thermodynamic extraction for {leiden_key}...")
+    print(f"[AUDIT] Executing Wilcoxon rank Tests outputs for {leiden_key}...")
     adata = load_evidence(adata_path)
 
 
@@ -108,7 +108,7 @@ def rank_gene_groups_wilcoxon(
         print(f"[WARNING]⚠️ Topology Anomaly in {leiden_key}: Clusters {ghost_states} lack minimum mass (N<10).")
         print("[SYSTEM] Exiling microscopic ghosts from Wilcoxon variance calculation...")
     if len(viable_states) < 2:
-        print(f" [SYSTEM] {leiden_key} possesses fewer than 2 viable states ({len(viable_states)}). Thermodynamic comparison impossible.")
+        print(f" [SYSTEM] {leiden_key} possesses fewer than 2 viable states ({len(viable_states)}). Comparison impossible.")
         print(" [SYSTEM] Bypassing Wilcoxon matrix geometry to prevent spatial collapse...")
         
         
@@ -164,7 +164,7 @@ def rank_gene_groups_wilcoxon(
         grouped_top_genes[str(cluster_id)] = genes
 
     if not grouped_top_genes:
-        print(f"[WARNING] Thermodynamic Void in {leiden_key}: Zero genes survived the absolute floor (LogFC > 1.0).")
+        print(f"[WARNING] Markers Genes Void in {leiden_key}: Zero genes survived the absolute floor (LogFC > 1.0).")
         print("[SYSTEM] Bypassing Matplotlib rendering to prevent X-axis spatial collapse...")
     else:
         print("[INFO] Rendering dendrogram, dotplot, and matrixplot evidence...")
@@ -481,7 +481,7 @@ def orc_project(
             annotation_manual_dict,ontology_cl_id_manual_dict = rank_gene_groups_wilcoxon(
                 macro_path, macro_leiden, annotation_manual_dict,ontology_cl_id_manual_dict
             )
-            print("[MACRO] Thermodynamic extraction complete.")
+            print("[MACRO] Parameters extraction complete.")
             auto_ref_mapping(macro_path, macro_model, macro_leiden)
         else:
             print(f"[ERROR] File missing at {macro_path}")

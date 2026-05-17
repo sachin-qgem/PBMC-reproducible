@@ -216,9 +216,9 @@ def main() -> None:
                     parts = clean_key.split('_')
                     active_label_key = '_'.join(parts[:-1])
     else:
-        st.sidebar.info("Workspace sterile. Awaiting ingestion from Control Room.")
+        st.sidebar.info("Workspace empty. Awaiting file upload.")
 
-    tab_control_room,tab_annotate, tab_telemetry = st.tabs(["🎛️ Control Room (Execution)","🧬 Annotation Engine", "📊 Visual Telemetry"])
+    tab_control_room,tab_annotate, tab_telemetry = st.tabs(["Execution", "Annotation", "Outputs"])
 
     # =========================================================================
     # TAB 1: THE CONTROL ROOM
@@ -229,7 +229,7 @@ def main() -> None:
             st.success("Workspace purged. Sterile environment achieved.")
             st.session_state.purge_success = False
         
-        st.markdown("### 1. The Entropy Purge")
+        st.markdown("### 1. Clear Workspace Cache")
         st.write("Wipe existing tensors and figures to prepare the physical container for new data ingestion.")
         
         if st.button("Execute 'make clean' / Purge Workspace", type="primary"):
@@ -271,7 +271,7 @@ def main() -> None:
         uploaded_files = st.file_uploader("Drop 10X files here", accept_multiple_files=True)
         
         if uploaded_files:
-            if st.button("Anchor Matter to Container Disk"):
+            if st.button("Save Files to Directory"):
                 target_dir = "data/raw/pbmc3k_filtered_gene_bc_matrices/hg19"
                 os.makedirs(target_dir, exist_ok=True)
                 for f in uploaded_files:
@@ -305,7 +305,7 @@ def main() -> None:
                     if missing_files:
                         st.error(f"⛔ **Execution Blocked:** Missing files: {missing_files}.")
                     else:
-                        with st.spinner("Executing 5-MAD thermodynamic purge..."):
+                        with st.spinner("Executing QC filtering..."):
                             try:
                                 P03_qc_filtering.main()
                                 st.success("Phase I Complete: pbmc3k_qc.h5ad anchored.")
@@ -318,7 +318,7 @@ def main() -> None:
                     if not os.path.exists("data/objects/pbmc3k_qc.h5ad"):
                         st.error("⛔ **Execution Blocked:** Phase I output not found.")
                     else:
-                        with st.spinner("Forging Macro Background Field..."):
+                        with st.spinner("Computing initial neighborhood graph and Leiden clustering..."):
                             sweep_state = P04_clustering.execute_macro_sweep(
                                 h5ad_path="data/objects/pbmc3k_qc.h5ad", 
                                 save_folder_path="data/objects"
@@ -355,7 +355,7 @@ def main() -> None:
             st.divider()
             st.markdown("### 🛑 Phase II: Human-in-the-Loop [MACRO-STATE]")
             
-            svg_file = "./results/figures/p04_clustering/macro_thermodynamic_surface.svg"
+            svg_file = "./results/figures/p04_clustering/macro_grid_search_surface.svg"
             if os.path.exists(svg_file):
                 with open(svg_file, "r", encoding="utf-8") as f:
                     svg_code = f.read()
@@ -398,7 +398,7 @@ def main() -> None:
             # THE PERMANENT LOCK PROTOCOL
             with col_lock:
                 if st.button("🔒 Lock Macro Coordinates & Initiate Micro-Queue", type="primary", key="lock_macro"):
-                    with st.spinner("Locking Macro-State and Extracting Micro-Continents..."):
+                    with st.spinner("Saving primary clustering and subsetting distinct populations..."):
                         st.session_state.temp_jaccard_scores = None # Flush test RAM
                         
                         macro_state = P04_clustering.lock_macro_and_extract_micro_queue(
@@ -426,7 +426,7 @@ def main() -> None:
                 
                 # Step 2A: Automatically Sweep the current micro-state if not done yet
                 if not st.session_state.current_micro_swept:
-                    with st.spinner(f"Sweeping thermodynamic surface for {current_micro}..."):
+                    with st.spinner(f"Sweeping grid search surface for {current_micro}..."):
                         micro_sweep = P04_clustering.execute_micro_sweep(filepath, current_micro, "./results/figures/p04_clustering")
                         st.session_state.current_micro_k = micro_sweep['suggested_k']
                         st.session_state.current_micro_r = micro_sweep['suggested_r']
@@ -435,7 +435,7 @@ def main() -> None:
                 
                 # Step 2B: Display the Map and Wait for Human Input
                 if st.session_state.current_micro_swept:
-                    svg_file = f"./results/figures/p04_clustering/{current_micro}_thermodynamic_surface.svg"
+                    svg_file = f"./results/figures/p04_clustering/{current_micro}_grid_search_surface.svg"
                     if os.path.exists(svg_file):
                         with open(svg_file, "r", encoding="utf-8") as f:
                             svg_code = f.read()
@@ -478,7 +478,7 @@ def main() -> None:
                     # THE PERMANENT LOCK PROTOCOL
                     with col_lock:
                         if st.button(f"🔒 Lock {current_micro} & Proceed to Next", type="primary", key=f"lock_{current_micro}"):
-                            with st.spinner(f"Locking {current_micro} and sealing coordinates..."):
+                            with st.spinner(f"Saving parameters for {current_micro}..."):
                                 st.session_state.temp_jaccard_scores = None # Flush test RAM
                                 
                                 micro_result = P04_clustering.lock_micro_state(
@@ -532,7 +532,7 @@ def main() -> None:
         if not master_map:
             st.info("📡 **Visual Telemetry Offline:** The workspace is currently sterile. Please ingest 10X matrices in the Control Room and execute Phases I through III to generate telemetry.")
         else:
-            st.header("📊 Visual Telemetry Vault")
+            st.header("Pipeline Figures")
             st.markdown("Select an analytical sector to project physical evidence onto the dashboard.")
  
             SECTOR_MAP = {
@@ -567,7 +567,7 @@ def main() -> None:
                 if adata is not None:
                     if 'final_top_genes_per_cluster' in adata.uns:
                         df_markers = adata.uns['final_top_genes_per_cluster']
-                        st.markdown("**Top Extracted Thermodynamic Markers (Wilcoxon Rank-Sum)**")
+                        st.markdown("**Top Extracted Genes Markers (Wilcoxon Rank-Sum)**")
                         st.dataframe(
                             df_markers[['group', 'names', 'pvals_adj', 'logfoldchanges', 'violin_delta']], 
                             use_container_width=True
@@ -657,7 +657,7 @@ def main() -> None:
                                                 mime="application/octet-stream"
                                             )
                                 except Exception as e:
-                                    st.error(f"P06 Execution Failed. Thermodynamic fracture detected:")
+                                    st.error(f"P06 Execution Failed. Fracture detected:")
                                     st.code(str(e))
                     else:
                         st.error(f"[ERROR] Required observation column '{cluster_col}' missing from matrix.")
