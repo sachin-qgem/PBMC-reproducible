@@ -17,9 +17,9 @@ sc.settings.verbosity = 3
 
 
 
-def load_evidence(path: str) -> ad.AnnData:
+def load_matrix(path: str) -> ad.AnnData:
     """
-        Ingests raw 10x Genomics Matrix Market data into an AnnData tensor.
+        Loads raw 10x Genomics Matrix Market data into an AnnData object.
 
         Parameters
         ----------
@@ -33,15 +33,14 @@ def load_evidence(path: str) -> ad.AnnData:
         """
     
     adata = sc.read_10x_mtx(path,var_names= "gene_symbols",make_unique=True,cache=True)
-    print(f"[INFO] Matrix loaded successfully. Dimensions: {adata.shape}")
+    print(f"[LOG] Matrix loaded. Dimensions: {adata.shape}")
 
     return adata
 
 
-def calculate_vital_signs(adata: ad.AnnData) -> ad.AnnData:
+def compute_quality_metrics(adata: ad.AnnData) -> ad.AnnData:
     """
-    Calculates primary quality control metrics, utilizing absolute genomic ledgers
-    to track Mitochondrial and Ribosomal mass.
+    Calculates primary quality control metrics including mitochondrial and ribosomal proportions.
 
     Parameters
     ----------
@@ -54,7 +53,7 @@ def calculate_vital_signs(adata: ad.AnnData) -> ad.AnnData:
         The matrix annotated with 'n_genes_by_counts', 'total_counts', 
         and 'pct_counts_mt'.
     """
-    print("[INFO] Cross-referencing against Broad Institute Ribosomal Ledger...")
+    print("[LOG] Calculating QC metrics.")
     
     adata.var['mt'] = adata.var_names.str.startswith('MT-')
 
@@ -75,15 +74,14 @@ def calculate_vital_signs(adata: ad.AnnData) -> ad.AnnData:
     return adata
 
 
-def is_outlier(
+def calculate_mad_outlier(
     adata: ad.AnnData, 
     metric: str, 
     nmads: int, 
     side: Literal["both", "upper", "lower"] = "both"
 ) -> np.ndarray:
     """
-    Calculates absolute topological boundaries using Median Absolute 
-    Deviation (MAD) to identify physical cell outliers.
+    Calculates Median Absolute Deviation (MAD) thresholds to identify outlier cells.
 
     Parameters
     ----------
@@ -117,7 +115,7 @@ def is_outlier(
 
 
 
-def audit_distribution(
+def plot_qc_distributions(
     adata: ad.AnnData, 
     violin_keys: list, 
     stagename: Literal["pre_filter", "post_filter"],
@@ -126,7 +124,7 @@ def audit_distribution(
     scatter_color: str = "pct_counts_mt"
 ) -> None:
     """
-    Generates and saves visual telemetry distributions for QC metrics.
+    Generates violin and scatter plots for QC metric distributions.
 
     Parameters
     ----------
@@ -147,7 +145,7 @@ def audit_distribution(
     -------
     None
     """
-    print(f"[AUDIT] Generating visual telemetry for {stagename} state...")
+    print(f"[LOG] Generating QC distribution plots for: {stagename}")
     
     sc.pl.violin(
         adata, 
@@ -169,10 +167,9 @@ def audit_distribution(
 
 
 
-def apply_filter(adata: ad.AnnData) -> ad.AnnData:
+def apply_quality_filters(adata: ad.AnnData) -> ad.AnnData:
     """
-    Executes the thermodynamic purge, removing cellular outliers and 
-    empty gene vectors based on robust 5-MAD thresholds.
+    Removes outlier cells based on MAD thresholds and filters low-expression genes.
 
     Parameters
     ----------
@@ -184,12 +181,12 @@ def apply_filter(adata: ad.AnnData) -> ad.AnnData:
     ad.AnnData
         The filtered, structurally sound expression matrix.
     """
-    print("[INFO] Applying 5-MAD thresholding for cell filtering. Removing genes with <3 expressing cells.")
+    print("[LOG] Applying 5-MAD threshold filters and removing genes expressed in <3 cells.")
     
-    adata.obs["outlier_n_genes_by_counts"] = is_outlier(
+    adata.obs["outlier_n_genes_by_counts"] = calculate_mad_outlier(
         adata, "n_genes_by_counts", 5, "both"
     )
-    adata.obs["outlier_pct_counts_mt"] = is_outlier(
+    adata.obs["outlier_pct_counts_mt"] = calculate_mad_outlier(
         adata, "pct_counts_mt", 5, "upper"
     )
     
@@ -204,15 +201,14 @@ def apply_filter(adata: ad.AnnData) -> ad.AnnData:
     cells_removed = adata.n_obs - adata_filtered.n_obs
     genes_removed = adata.n_vars - adata_filtered.n_vars
     
-    print(f"[INFO] Removed {cells_removed} cells and {genes_removed} genes.")
-    print(f"[SUCCESS] Final Dimensions: {adata_filtered.n_obs} cells x {adata_filtered.n_vars} genes.")
+    print(f"[LOG] Removed {cells_removed} cells and {genes_removed} genes.")
+    print(f"[LOG] Filtered dimensions: {adata_filtered.n_obs} cells x {adata_filtered.n_vars} genes.")
     
     return adata_filtered
 
-def execute_doublets_purge(adata: ad.AnnData) -> ad.AnnData:
+def remove_multiplets(adata: ad.AnnData) -> ad.AnnData:
     """
-    Algorithmically simulates and vaporizes transcriptomic doublets 
-    prior to principal component generation.
+    Identifies and removes multiplet droplets using the Scrublet algorithm.
 
     Parameters
     ----------
@@ -224,40 +220,34 @@ def execute_doublets_purge(adata: ad.AnnData) -> ad.AnnData:
     ad.AnnData
         The matrix strictly cleansed of multi-cell droplets.
     """
-    print("\n[INFO] Initializing Scrublet for synthetic doublet simulation...")
+    print("\n[LOG] Initializing Scrublet for multiplet detection.")
     
-    # Scanpy's native Scrublet generates thousands of synthetic doublets,
-    # projects them, and flags real cells that occupy the same topological space.
     sc.pp.scrublet(adata)
     
     doublet_mask = adata.obs['predicted_doublet']
     doublet_count = doublet_mask.sum()
     
-    print(f"[INFO] Flagged {doublet_count} potential doublets.")
+    print(f"[LOG] Scrublet identified {doublet_mask.sum()} potential multiplets.")
     
-    # Generate visual telemetry of the doublet score distribution
     sc.pl.scrublet_score_distribution(
         adata, 
         show=False, 
         save="_doublet_distribution.svg"
     )
     
-    # The Thermodynamic Vaporization
-    adata_sterile = adata[~doublet_mask].copy()
+    adata_filtered = adata[~doublet_mask].copy()
     
-    print(f"[INFO] Matrix filtered. New dimensions: {adata_sterile.n_obs} cells x {adata_sterile.n_vars} genes.")
+    print(f"[LOG] Multiplets removed. New dimensions: {adata_filtered.n_obs} cells x {adata_filtered.n_vars} genes.")
     
-    return adata_sterile
+    return adata_filtered
 
-def orch_qc_filtering(
+def execute_qc_pipeline(
     mtx_path: str, 
     pbmc3k_qc_h5ad_path: str, 
     v_keys: list = ['n_genes_by_counts', 'total_counts', 'pct_counts_mt']
 ) -> None:
     """
-    The master orchestrator for Phase I. Loads raw data, executes QC 
-    audits, applies thermodynamic filters, generates standard layers, 
-    and seals the golden artifact to disk.
+    Executes the complete quality control, filtering, and normalization pipeline.
 
     Parameters
     ----------
@@ -272,20 +262,19 @@ def orch_qc_filtering(
     -------
     None
     """
-    print("\n[INFO] Starting Phase I: Quality Control and Filtering")
+    print("\n[LOG] Initiating Phase I QC pipeline.")
     
-    adata = load_evidence(mtx_path)
-    adata = calculate_vital_signs(adata)
+    adata = load_matrix(mtx_path)
+    adata = compute_quality_metrics(adata)
     
-    audit_distribution(
+    plot_qc_distributions(
         adata, v_keys, "pre_filter", 
         "total_counts", "n_genes_by_counts", "pct_counts_mt"
     )
     
-    adata_filtered = apply_filter(adata)
-    adata_filtered = execute_doublets_purge(adata_filtered)
+    adata_filtered = apply_quality_filters(adata)
+    adata_filtered = remove_multiplets(adata_filtered)
     
-    # Secure the raw counts layer before normalization
     adata_filtered.layers['counts'] = adata_filtered.X.copy()
     
     # Generate the normalized log1p layer
@@ -294,12 +283,12 @@ def orch_qc_filtering(
     sc.pp.log1p(adata_temp)
     adata_filtered.layers['log1p_norm'] = adata_temp.X.copy()
     
-    audit_distribution(
+    plot_qc_distributions(
         adata_filtered, v_keys, "post_filter", 
         "total_counts", "n_genes_by_counts", "pct_counts_mt"
     )
     
-    print(f"[INFO] Saving filtered matrix to {pbmc3k_qc_h5ad_path}")
+    print(f"[LOG] Saving processed matrix to {pbmc3k_qc_h5ad_path}")
     adata_filtered.write_h5ad(pbmc3k_qc_h5ad_path, compression='gzip')
     
     del adata, adata_filtered, adata_temp
@@ -308,23 +297,23 @@ def orch_qc_filtering(
 
 
 def main():
-    # Define absolute topological paths
+    
     sc.settings.figdir = "./results/figures/p03_qc_filtering"
     os.makedirs(sc.settings.figdir, exist_ok=True)
     mtx_path = "data/raw/pbmc3k_filtered_gene_bc_matrices/hg19"
     pbmc3k_qc_h5ad_path = "data/objects/pbmc3k_qc.h5ad"
+
     if not os.path.exists(mtx_path):
-        raise FileNotFoundError(
-            f"[CRITICAL FAILURE] Genesis matrix missing at {mtx_path}. "
-            "Ensure the 10x raw files are staged before execution."
-        )
+        raise FileNotFoundError(f"[ERROR] Input matrix missing at {mtx_path}.")
+    
     os.makedirs(os.path.dirname(pbmc3k_qc_h5ad_path), exist_ok=True)
-    orch_qc_filtering(
+
+    execute_qc_pipeline(
         mtx_path=mtx_path, 
         pbmc3k_qc_h5ad_path=pbmc3k_qc_h5ad_path
     )
     
-    print("\n[INFO] Phase I complete. Matrix ready for downstream subsetting.")
+    print("\n[LOG] Phase I complete.")
 
 if __name__ == "__main__":
     main()

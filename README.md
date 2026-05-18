@@ -10,98 +10,97 @@ app_file: app.py
 pinned: false
 ---
 
-- # PBMC-reproducible: Cybernetic Clustering and markers Engine
+- # PBMC-reproducible: Automated Clustering and Marker Identification Pipeline
 - [![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.19335670-blue)](https://doi.org/10.5281/zenodo.19335670)
 - [![ORCID](https://img.shields.io/badge/ORCID-0009--0000--2744--6131-A6CE39?logo=orcid&logoColor=white)](https://orcid.org/0009-0000-2744-6131)
 - [![Report](https://img.shields.io/badge/Report-PDF-darkred?logo=adobeacrobatreader&logoColor=white)](report.pdf) [View the Full Analytical Thesis](report.pdf) 
 - [![Hugging Face Space](https://img.shields.io/badge/🤗_Hugging_Face-Live_Deployment-FFD21E)](https://huggingface.co/spaces/sachin-qgemai-alpha/pbmc_single_healthy_donor) [Interact with the Live Pipeline](https://huggingface.co/spaces/sachin-qgemai-alpha/pbmc_single_healthy_donor)
-- **Status:** EXECUTION MODE 
-- **Objective:** Reproduce the PBMC dataset analysis from First Principles using a Human-in-the-Loop architecture.
+- **Status:** Active 
+- **Objective:** Reproduce the PBMC dataset analysis using a semi-automated parameter review workflow.
 
-**⚠️⚠️⚠️THIS IS EXPLICITLY FOR SINGLE DONOR ONLY AT THIS MOMENT. DEVELOPMENT GOING ON FOR MULTI_DONOR, BATCH INTEGRATION AND CORRECTION⚠️⚠️⚠️**
+**⚠️Note: The current pipeline is restricted to single-donor data. Multi-donor batch integration is under development.**
 
-This is NOT a tutorial. This is a **Forensic Reconstruction**.  
-We are auditing the standard pipeline to validate our learnt theory. We assume default automated pipelines are mathematically flawed and require rigorous computational proof at every structural node.
+Standard pipelines were evaluated to validate methodologies. Computational parameters were explicitly defined and verified at each processing step.
+
 ---
 ### The Phases of Execution:
 
 #### ▶ Phase I: Quality Control & Preprocessing
 
-- **Adaptive MAD Filtering**: Removal of low-quality cells and technical artifacts by applying a strict Median Absolute Deviation (MAD) of 5 to Mito % and total expressed genes. Ribosomal fractions are calculated but not filtered out at this stage. Removing them early would artificially reduce total cellular counts, skewing the expected variance baseline required for Pearson residuals in downstream steps.
+- **Adaptive MAD Filtering**: Low-quality cells and technical artifacts were removed by applying a Median Absolute Deviation (MAD) threshold of 5 to mitochondrial percentage and total expressed genes. Ribosomal fractions were calculated but retained at this stage to preserve the variance baseline required for Pearson residual calculation.
     
-- **Doublet Removal**: Identification and filtering of synthetic multi-cell droplets using Scrublet to prevent artificial clustering between distinct cell types.
+- **Doublet Removal**: The Scrublet algorithm was applied to identify and filter doublet droplets.
     
-- **Gene Sparsity Filtering**: Removal of uninformative or sparsely expressed genes (enforcing a minimum threshold of detection in ≥ 3 cells).
+- **Gene Sparsity Filtering**: Genes detected in fewer than 3 cells were removed from the matrix.
     
-- **Library Size Normalization:** Log1p-transformation and target-sum scaling (1e4) of the raw count matrix to normalize cellular sequencing depth.
+- **Library Size Normalization Layer:** An additional layer was created here the raw count matrix was normalized via log1p-transformation and scaled to a target sum of 10,000 (1e4).
     
 
-#### ▶ Phase II: Structural Topology &  Clustering
+#### ▶ Phase II: Dimensional Subspace Reduction and Clustering
 
-- **Data Splitting (Train/Project)**: A strict 50/50 split of the dataset into training and holdout (projection) sets to prevent data leakage and circular inference during downstream validation.
+- **Data Splitting (Train/Project)**: The dataset was divided equally (50/50) into training and projection subsets to prevent data leakage during downstream evaluation.
     
-- **Iterative Dimensionality Reduction & HVG Selection**: Pearson residuals, highly variable genes (HVGs), and PCA are recalculated exclusively on the sub-matrices. Crucially, HVGs are computed on the full gene set to establish an accurate variance baseline. Only after this calculation are mitochondrial and ribosomal genes explicitly masked from the HVG pool prior to PCA, preventing housekeeping genes from driving spatial clustering.
+- **Iterative Variance Calculation & HVG Selection**: Pearson residuals, highly variable genes (HVGs), and Principal Component Analysis (PCA) were calculated independently on the sub-matrices. Mitochondrial and ribosomal genes were excluded from the HVG pool prior to PCA to prevent housekeeping genes from driving variance.
     
-- **Cell Cycle Scoring & Orthogonal Projection:** Auditing S-phase and G2M-phase genes to ensure topological clustering is driven by core phenotypic identity, not transient mitotic states.
+- **Cell Cycle Scoring:** S-phase and G2M-phase gene expression was scored to verify that clustering variance was independent of mitotic phase.
     
-- **Hyperparameter Grid Search (Stability Audit**): Evaluating cluster stability using Jaccard survival scores (20 iterations, 0.8 subsample) and structural Modularity (Q) across a combinatorial grid of KNN and Leiden resolutions to deterministically lock boundaries without human bias.
+- **Hyperparameter Grid Search**: Cluster stability was evaluated by calculating mean Jaccard indices across 20 iterations (subsampling fraction = 0.8) and graph modularity (Q) across a grid of k-nearest neighbors and Leiden resolution parameters.
     
-- **PCA Variance Analysis**: Examining the PCA variance ratio to distinguish continuous developmental gradients from discrete sub-populations, determining if further sub-clustering is necessary.
+- **PCA Variance Analysis**: The PCA variance ratio was calculated to determine if further sub-clustering was required for identified populations.
     
-- **Holdout Projection**: Projecting the unseen 50% holdout data onto the established training reference (using Scanpy Ingest) to validate cluster boundary generalization.
+- **Holdout Projection**: The 50% holdout dataset was mapped onto the training reference using scanpy.ingest to evaluate cluster boundary generalization.
     
 
 #### ▶ Phase III: Differential Gene Expression (DGE) & Marker Extraction
 
-- **Wilcoxon Rank-Sum Test**: Computing cluster-specific marker genes. Clusters with fewer than 10 cells are excluded from DGE to prevent statistically unreliable results.
+- **Wilcoxon Rank-Sum Test**: Cluster-specific marker genes were calculated. Clusters containing fewer than 10 cells were excluded from DGE calculation.
     
-- **Log-Fold Boundaries:** Isolating significant markers by strictly enforcing `logfoldchanges > 1.0` while dynamically capping extreme dropout artifacts (`logfoldchanges < 10.0`), alongside a baseline significance of `pvals_adj < 0.05`.
+- **Log-Fold Boundaries:** Significant markers were filtered using boundaries of `logfoldchanges>1.0` and `< 10.0`, with `pvals_adj < 0.05`.
     
-- **Adaptive P-value Thresholding**: Applying a local 93.75th-percentile cutoff to p-values to isolate the most significant markers per cluster, with a fallback minimum of 3 genes to ensure small clusters retain defining markers.
+- **Adaptive P-value Thresholding**: A 93.75th-percentile cutoff was applied to p-values to isolate significant markers, with a minimum retention parameter of 3 genes per cluster.
     
-- **Spatial Exclusivity Scoring (`violin_delta`):** Mathematically isolating the purest marker genes by calculating the expression differential (`pct_nz_group` - `pct_nz_reference`).
+- **Expression Differential Analysis (`violin_delta`):** The expression proportion difference (`pct_nz_group` - `pct_nz_reference`) was calculated for marker filtering.
     
-- **Cross-Cluster Marker Auditing**: Comparing top markers against neighboring micro-clusters to verify lineage separation and distinct expression profiles.
+- **Cross-Cluster Evaluation**: Extracted markers were compared against adjacent sub-clusters to verify distinct expression profiles.
     
-- **Canonical Ledger Validation:** Auditing machine-derived markers against a pre-curated JSON dictionary of established biological truths (e.g., Theis Lab signatures).
+- **Canonical Marker Validation:** Derived markers were evaluated against a pre-curated JSON dictionary of established biological markers.
     
 
-#### ▶ Phase IV: Annotation & Data Recombination
+#### ▶ Phase IV: Annotation & Data Integration
 
-- **Manual Ontology Injection:** Mapping mathematically validated gene signatures to standard Cell Ontology (CL) IDs within the isolated Macro and Micro matrices.
+- **Manual Ontology Mapping:** Standardized Cell Ontology (CL) IDs were assigned to cluster indices within the calculated sub-matrices.
     
-- **Automated Annotation Validation**: Comparing manual annotations against predictions from pre-trained, supervised Neural Networks (`CellTypist` Immune models).
+- **Automated Annotation Validation**: Manual annotations were compared against predictions generated by pre-trained `CellTypist` Immune models.
     
-- **Concordance Scoring:** Calculating the Adjusted Rand Index (ARI) between the human labels and the machine's majority voting logic to prove structural agreement.
+- **Concordance Scoring:** The Adjusted Rand Index (ARI) was calculated between manual labels and automated predictions.
     
-- **Metadata Aggregation:** Consolidating cell barcodes and annotations from all sub-matrices into a master CSV, using a 'latest-execution-wins' logic to resolve duplicate barcodes.
+- **Metadata Aggregation:** Cell barcodes and annotations from all sub-matrices were concatenated into a master CSV file. Duplicate barcodes were resolved using latest-execution logic.
     
-- **Global Tensor Recombination:** Ingesting the master FAIR-compliant CSV ledger and mapping the final biological identities back onto the raw, un-split global matrix. Unannotated or failed cells are programmatically standardized to `Unknown/Filtered` before exporting the final Machine-Learning-Ready (`.h5ad`) artifact.
+- **Global Data Integration:** Metadata entries from the central label dataframe were mapped back onto the global expression matrix indices. Unannotated or failed cells are programmatically set to `Unknown/Filtered` before exporting the final Machine-Learning-Ready (`.h5ad`) artifact.
 
 ---
 
-### Architectural Enhancements
+### Methodological Validations
 
-This pipeline improves upon the default workflows of standard single-cell tools (e.g., Seurat/Scanpy) by introducing three rigorous computational validation steps:
-1. **Hyperparameter Grid Search (Modularity Audit):** Instead of relying on arbitrary Leiden resolutions, Phase II generates a grid-search contour map of Modularity (Q) across varying k-neighbors and resolutions. This guides parameter selection toward stable modularity plateaus rather than volatile transition zones, ensuring mathematically robust cluster boundaries.
-2. **Jaccard Bootstrapping:** Chosen clustering parameters are empirically validated by randomly subsampling 80% of the cells across 20 iterations to quantify and prove cluster stability.
-3. **Sub-Clustering Stopping Criterion:** Evaluates the PCA variance ratio to dynamically determine whether a cluster represents a homogeneous biological population (terminal state) or contains further substructure requiring additional micro-clustering.
-
----
-
-### Execution Constraints
-
-1. **The Physical Object:** Explicitly tracking the transformation (e.g., Light Signal Probability → Count). Matrix orientation is strictly maintained as `Cells x Genes`.
-2. **The Assumptions:** Stating mathematical simplifications and thermodynamic floors explicitly.
-3. **The Bridge Axiom:** Justifying steps with derived truth (e.g., Axiom A1: Poisson Limit).
-4. **The Failure Mode:** Analyzing exactly what breaks if a step is bypassed or abstracted.
-5. **The Modernity Audit:** Comparing foundational methods against stringent industrial standards.
+This pipeline implements the following validation steps:
+1. **Modularity Grid Search:** Graph modularity (Q) was calculated systematically across a grid of k-nearest neighbors and Leiden resolution values to identify regions where cluster count metrics stabilize.
+2. **Jaccard Bootstrapping:** Clustering parameters were validated by randomly subsampling 80% of the cells across 20 iterations to calculate Jaccard index stability.
+3. **Sub-Clustering Criterion:** The PCA variance ratio was evaluated to determine mathematically if a cluster required further subdivision.
 
 ---
 
-### ⚙️ Local Ignition & Environment Setup
+### Analytical Constraints
 
-If you wish to bypass the Hugging Face live deployment and run the cybernetic engine locally, execute this strict sequence:
+1. **Data Structures:** Matrix orientation was strictly maintained as `Cells x Genes`.
+2. **Mathematical Assumptions:** Statistical thresholds and normalizations were explicitly defined.
+3. **Theoretical Justification:** Analytical steps were supported by standard statistical principles.
+4. **Protocol Comparison:** Methodologies were mapped to standard computational biology practices.
+
+---
+
+### ⚙️ Environment Setup and Installation
+
+To execute the pipeline locally:
 
 **1. Clone the repository:**
 ```bash
@@ -110,39 +109,39 @@ cd PBMC-reproducible
 ```
 
 
-**3. Forge the Isolated Background Field:**
-We utilize standard Python virtual environments and strict pip dependency ledgers from makefile
+**3. Create Virtual Environment::**
+Virtual environments and dependencies are managed via Makefile.
 ```bash
 make setup
 ```
 
-**4. Ignite the Streamlit Orchestrator:**
-Do not run the backend scripts manually. Boot the visual interface.
+**4. Execute User Interface Script::**
+Execute the user interface application to run the pipeline modules.
 ```bash
 make run
 ```
 
 ---
 
-### Global Architecture
+### Directory Structure
 
-* **`src/`**: The immutable Python logic core. Divided into upstream processing and downstream analysis scripts.
-* **`data/`**: The physical data lake containing unadulterated raw inputs, checkpointed `.h5ad` state vectors, and absolute biological reference dictionaries.
-* **`results/`**: The output staging ground. Houses the generated JSON ledgers, CSV topologies, and all cross-validation visual evidence.
-* **`notebooks/`**: The computational workshop for initial audits, visual derivations, and parameter testing.
+* **`src/`**: Source code for data processing and downstream analysis.
+* **`data/`**: Directory for raw 10x Genomics inputs, .h5ad matrices, and biological reference JSON files.
+* **`results/`**: Output directory for generated CSV files and plots.
+* **`notebooks/`**: Jupyter notebooks for preliminary data exploration and parameter testing.
 
 ---
 
-## ⚠️ Note on High-Fidelity Visual Rendering
-This repository contains high-density single-cell transcriptomic visualizations (UMAPs, PCA manifolds, and topological surfaces) exported as scalable vector graphics (`.svg`). 
+## ⚠️ Note on Image Rendering Constraints
+This repository contains single-cell transcriptomic plots exported as scalable vector graphics (`.svg`). 
 
-Due to GitHub's aggressive Content Security Policy (Camo proxy) restricting complex XML/SVG execution in the browser, these figures may occasionally fail to render or appear as blank spaces in the online view of `report.md`.
+Due to GitHub's Content Security Policy restricting SVG execution in the browser, these figures may not render natively in the online view of `report.md`.
 
-**To view the full analytical report with all structural telemetry intact:**
-1. Clone or download this repository to your local machine.
-2. Open the project folder using **Obsidian**, **Visual Studio Code**, or any standard local Markdown engine. 
-3. All relative paths and high-resolution figures will render natively.
-4. OR a report.pdf File is also there in the repo
+**To view the report with all figures rendered::**
+1. Clone or download this repository to a local directory.
+2. Open the project folder using a standard local Markdown viewer (e.g., Obsidian, Visual Studio Code).
+3. Relative paths and images will render natively.
+4. A compiled report.pdf is also provided in the repository.
 
 
 ---
@@ -152,39 +151,39 @@ Due to GitHub's aggressive Content Security Policy (Camo proxy) restricting comp
 ```text
 /PBMC-reproducible
 │
-├── .github/workflows/                  # CI/CD Autonomous Bridge to Hugging Face
-├── .streamlit/                         # Server configuration limits (e.g., 1GB upload max)
-├── .venv/                              # Local isolated Python environment (Git ignored)
+├── .github/workflows/                  # CI/CD Workflow configurations
+├── .streamlit/                         # Application server configuration
+├── .venv/                              # Local Python environment (Git ignored)
 ├── cache/                              # Temporary execution buffers
 │
-├── app.py                              <-- The Entry Point (Cybernetic Interface)
-├── data/                               # The Data Lake
-│   ├── celltypist_models/              # Automated reference-based annotation models
-│   ├── objects/                        # Checkpointed AnnData (.h5ad) state vectors
-│   ├── raw/                            # Immutable 10x Genomics inputs
+├── app.py                              # Streamlit application interface
+├── data/                               # Data directory
+│   ├── celltypist_models/              # Automated annotation models
+│   ├── objects/                        # AnnData (.h5ad) matrices
+│   ├── raw/                            # Raw 10x Genomics inputs
 │   ├── regev_lab_cell_cycle_genes.txt  # Biological reference for cell cycle scoring
 │   ├── Teichlab_curated_markers.json   # Canonical marker validation dictionary
 │   └── universal_ontology_id_dict.json # Standardized Cell Ontology (CL) mapping
 │
-├── notebooks/                          # Audits and experimental derivations
+├── notebooks/                          # Jupyter notebooks
 │
-├── results/                            # Output staging and visual telemetry
-│   └── figures/                        # The Visual Proofs (QC, Clustering, Markers, Annotation)
+├── results/                            # Output directory
+│   └── figures/                        # Generated plots (QC, Clustering, Markers)
 │
-├── src/                                # The Python Logic Core
-│   ├── 01_upstream_pipeline/           # The Tombstone (Reference for FASTQ/BAM -> Matrix) But in pipeline , we use the filtered genes matix as input as I had MacOS only
-│   └── 02_analysis_scripts/            # The 5-Sigma Pipeline Engines
-│       ├── P02_matrix_construction.py  # Data ingestion and tensor formatting (But in pipeline , we use the filtered genes matix as input as I had MacOS only)
-│       ├── P03_qc_filtering.py         # Phase I: 5-MAD outlier detection and matrix purge
-│       ├── P04_latets.py               # Phase II: Latent geometry, Jaccard validation, Topographical Sweep
-│       ├── P05_top_markers.py          # Phase III: Wilcoxon rank-sum extraction and lineage validation
-│       └── P06_annotation.py           # Phase IV: Ledger injection, ontology mapping, and final ML Tensor
+├── src/                                # Source Code
+│   ├── 01_upstream_pipeline/           # Upstream reference scripts (FASTQ/BAM -> Matrix)
+│   └── 02_analysis_scripts/            # Analysis pipeline scripts
+│       ├── P02_matrix_construction.py  # Data ingestion and formatting
+│       ├── P03_qc_filtering.py         # Phase I: Outlier cell filtering
+│       ├── P04_latets.py               # Phase II: PCA, Jaccard validation, grid search
+│       ├── P05_top_markers.py          # Phase III: Wilcoxon rank-sum extraction
+│       └── P06_annotation.py           # Phase IV: Metadata integration and final export
 │
-├── .gitattributes                      # Git LFS and line-ending configurations
-├── .gitignore                          # Exclusion rules (ignores large *.h5ad files, tracks code)
-├── pyproject.toml                      # The Architectural Blueprint (for pip install -e .)
-├── requirements.txt                    # Strict pinned dependencies for Hugging Face deployment
+├── .gitattributes                      # Git LFS configurations
+├── .gitignore                          # Exclusion rules
+├── pyproject.toml                      # Project build configuration
+├── requirements.txt                    # Pinned dependencies
 ├── LICENSE                             # MIT License
-├── report.md                           # The Methodology and Results (IMRAD)
-└── README.md                           # The Forensic Log: Project Mission and Constraints
+├── report.md                           # Analytical methodology report
+└── README.md                           # Project documentation
 ```

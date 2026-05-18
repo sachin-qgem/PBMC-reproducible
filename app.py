@@ -1,15 +1,9 @@
 """
-Phase IV: Comprehensive Orchestration & UI Bridge (Streamlit Engine)
+Streamlit Application Interface
 
-This module operates as the master control interface for human-in-the-loop 
-topological mapping. It utilizes cached memory to pin massive .h5ad tensors 
-in RAM, constructs an interactive 2D matrix for biological identity injection, 
-and features a Visual Telemetry scanner to project physical pipeline artifacts 
-(PNGs) into the browser. Finally, it commands a Subprocess engine to execute 
-the Phase IV Recombination script entirely in the background.
+This module provides a graphical interface for data pipeline Pipeline Execution,
+parameter selection, and biological annotation mapping.
 """
-
-
 import json
 import os
 import re
@@ -24,36 +18,17 @@ import pandas as pd
 import scanpy as sc
 import streamlit as st
 
-# =============================================================================
-# ABSOLUTE LAW: Page config must be the very first Streamlit command executed
-# =============================================================================
 st.set_page_config(page_title="PBMC Biological Observatory", layout="wide")
-# =============================================================================
-# THE WORMHOLE: Importing the Packaged Pipeline
-# =============================================================================
 
 from src.pbmc3k_pipeline import P03_qc_filtering, P04_clustering, P05_top_markers, P06_annotation
 
-# =============================================================================
-# GLOBAL THERMODYNAMIC CONSTANTS & UI CONFIGURATION
-# =============================================================================
-
-
-# Paths mathematically aligned to P04, P05, and P06 outputs
 DICT_B_PATH = "./data/objects/Dictionary_of_returns_from_orch_B.json"
 ANNOTATION_PATH = "./data/objects/annotation_manual_empty.json"
 ONTOLOGY_PATH = "./data/objects/ontology_cl_id_manual_empty.json"
 
-# =============================================================================
-# MEMORY I/O ENGINES
-# =============================================================================
-
-def initialize_session_vault() -> None:
+def initialize_session_state() -> None:
     """
-    Initializes the protected RAM vault to survive Streamlit's reactive loop.
-    
-    Variables stored in `st.session_state` persist across user interactions,
-    preventing the erasure of human inputs when the script re-runs.
+    State variables are initialized for UI interaction.
     """
     if "annotations" not in st.session_state:
         st.session_state.annotations = {}
@@ -65,7 +40,6 @@ def initialize_session_vault() -> None:
         st.session_state.phase2_complete = False
     if "temp_jaccard_scores" not in st.session_state:
         st.session_state.temp_jaccard_scores = None
-    # --- PHASE II: ITERATIVE STATE MACHINE ---
     if "phase2_macro_swept" not in st.session_state:
         st.session_state.phase2_macro_swept = False
     if "phase2_macro_locked" not in st.session_state:
@@ -84,53 +58,34 @@ def initialize_session_vault() -> None:
         st.session_state.phase2_complete = False
 
 @st.cache_resource(show_spinner="Loading Heavy Tensor into RAM...")
-def load_tensor(filepath: str) -> Optional[ad.AnnData]:
+def load_anndata(filepath: str) -> Optional[ad.AnnData]:
     """
-    Loads an AnnData tensor into cached memory outside the Streamlit loop.
-
-    By decorating this function with `@st.cache_resource`, we physically pin 
-    the matrix in RAM. This prevents the engine from continuously querying the 
-    disk and reloading the massive .h5ad file on every UI interaction.
-
-    Parameters
-    ----------
-    filepath : str
-        The absolute or relative path to the physical .h5ad matrix.
-
-    Returns
-    -------
-    Optional[ad.AnnData]
-        The loaded tensor object, or None if the physical file does not exist.
+    Caches array data.
     """
     if op.exists(filepath):
         return sc.read_h5ad(filepath)
     return None
 
-def load_json_ledger(filepath: str) -> Dict[str, Any]:
+def load_json(filepath: str) -> Dict[str, Any]:
     """
-    Safely ingests a JSON ledger from the physical disk into Python dictionaries.
+    Loads a JSON file to a dictionary.
     """
     if op.exists(filepath):
         with open(filepath, 'r', encoding='utf-8') as f:
             return json.load(f)
     return {}
 
-def save_json_ledger(filepath: str, data: Dict[str, Any]) -> None:
+def save_json(filepath: str, data: Dict[str, Any]) -> None:
     """
-    Atomically writes the mapped dictionary to disk, forging directories if required.
+    Writes dictionary data to a JSON file.
     """
     Path(filepath).parent.mkdir(parents=True, exist_ok=True)
     with open(filepath, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=4)
 
-# =============================================================================
-# VISUAL TELEMETRY SCANNER
-# =============================================================================
-
-def render_visual_telemetry(sub_dir: str, title: str) -> None:
+def render_plots(sub_dir: str, title: str) -> None:
     """
-    Scans the physical disk for both PNG and SVG artifacts and renders them
-    using responsive CSS containment to prevent overlapping.
+    Parses visual outputs for interface display.
     """
     target_dir = op.join("./results/figures/", sub_dir)
     st.markdown(f"#### {title}")
@@ -143,15 +98,13 @@ def render_visual_telemetry(sub_dir: str, title: str) -> None:
     image_files = [p for p in Path(target_dir).rglob("*") if p.suffix.lower() in valid_extensions]
     
     if not image_files:
-        st.info(f"No telemetry artifacts found in {sub_dir}.")
+        st.info(f"No plot files found in {sub_dir}.")
         return
         
-    # Build a 2-column mathematical grid
     cols = st.columns(2)
     for idx, img_path in enumerate(image_files):
         with cols[idx % 2]:
             if img_path.suffix.lower() == ".svg":
-                # 1. Read the raw SVG XML
                 with open(img_path, "r", encoding="utf-8") as f:
                     svg_code = f.read()
                 svg_code = re.sub(r'width="[^"]+"', 'width="100%"', svg_code, count=1)
@@ -163,76 +116,65 @@ def render_visual_telemetry(sub_dir: str, title: str) -> None:
                 st.markdown(styled_svg, unsafe_allow_html=True)
                 st.caption(f"📍 {img_path.name}")
             else:
-                # Standard fallback for standard PNGs
                 st.image(str(img_path), caption=img_path.name, use_container_width=True)
 
-# =============================================================================
-# MAIN ORCHESTRATION ENGINE
-# =============================================================================
 
 def main() -> None:
-    """
-    The primary execution loop for the Streamlit UI. Handles state initialization, 
-    matrix selection routing, transient dataframe rendering, Subprocess execution,
-    and the final fracture protocol to seal data to disk.
-    """
-    st.title("🧬 PBMC Human-in-the-Loop Pipeline")
     
-    initialize_session_vault()
+    st.title("🧬 PBMC Analysis Interface")
     
-    master_map = load_json_ledger(DICT_B_PATH)
+    initialize_session_state()
+    
+    master_map = load_json(DICT_B_PATH)
     
     if master_map:
         if not st.session_state.annotations:
-            st.session_state.annotations = load_json_ledger(ANNOTATION_PATH)
+            st.session_state.annotations = load_json(ANNOTATION_PATH)
         if not st.session_state.ontologies:
-            st.session_state.ontologies = load_json_ledger(ONTOLOGY_PATH)
+            st.session_state.ontologies = load_json(ONTOLOGY_PATH)
 
-    st.sidebar.header("Navigation")
-    active_path = None
-    active_leiden = None
-    active_label_key = None
+    st.sidebar.header("Data Selection")
+    active_path, active_leiden, active_label_key = None, None, None
+    
     if master_map:
         macro_key = master_map.get('macro_leiden_key_training')
         micro_paths = master_map.get('projected_micro_file_path_dictionary', {})
         micro_leiden_dict = master_map.get('projected_micro_leiden_key_dictionary', {})
         
-        view_mode = st.sidebar.radio("Topology Level", ["Macro Level", "Micro Level"])
+        view_mode = st.sidebar.radio("Clustering Tier", ["Primary Clustering", "Sub-Clustering"])
     
-        if view_mode == "Macro Level":
+        if view_mode == "Primary Clustering":
             active_path = master_map.get('macro_adata_project_file_path')
             active_leiden = macro_key
             active_label_key = macro_key
         else:
-            selected_micro = st.sidebar.selectbox("Select Micro Topology", list(micro_paths.keys()))
+            selected_micro = st.sidebar.selectbox("Select Sub-Cluster Matrix", list(micro_paths.keys()))
             if selected_micro:
                 active_path = micro_paths[selected_micro]
                 active_leiden = micro_leiden_dict.get(selected_micro)
                 active_label_key = active_leiden
                 
                 if active_leiden is None:
-                    st.sidebar.warning("Terminal State Detected. Inheriting parent topology logic.")
+                    st.sidebar.warning("Isotropic Variance State Detected. Inheriting parent key.")
                     clean_key = selected_micro.replace('_Terminal_State', '')
                     parts = clean_key.split('_')
                     active_label_key = '_'.join(parts[:-1])
     else:
         st.sidebar.info("Workspace empty. Awaiting file upload.")
 
-    tab_control_room,tab_annotate, tab_telemetry = st.tabs(["Execution", "Annotation", "Outputs"])
+    tab_pipeline,tab_annotate, tab_plots = st.tabs(["Pipeline Execution", "Annotation Mapping", "Data Visualization"])
 
-    # =========================================================================
-    # TAB 1: THE CONTROL ROOM
-    # =========================================================================
-    with tab_control_room:
+
+    with tab_pipeline:
         
         if st.session_state.get("purge_success", False):
-            st.success("Workspace purged. Sterile environment achieved.")
+            st.success("Workspace directory cleared.")
             st.session_state.purge_success = False
         
-        st.markdown("### 1. Clear Workspace Cache")
-        st.write("Wipe existing tensors and figures to prepare the physical container for new data ingestion.")
+        st.markdown("### 1. File Management")
+        st.write("Remove existing matrices and figures to reset the workspace directory.")
         
-        if st.button("Execute 'make clean' / Purge Workspace", type="primary"):
+        if st.button("Clear Workspace", type="primary"):
 
             directories_to_clean = [
                 "data/raw/pbmc3k_filtered_gene_bc_matrices/hg19", 
@@ -265,7 +207,7 @@ def main() -> None:
             
         st.divider()
 
-        st.markdown("### 2. The Ingestion Protocol")
+        st.markdown("### 2. Processing Modules")
         st.write("Upload the 3 standard 10X Genomics files: `matrix.mtx`, `barcodes.tsv`, `genes.tsv`")
         
         uploaded_files = st.file_uploader("Drop 10X files here", accept_multiple_files=True)
@@ -278,16 +220,16 @@ def main() -> None:
                     file_path = os.path.join(target_dir, f.name)
                     with open(file_path, "wb") as disk_file:
                         disk_file.write(f.getbuffer())
-                st.success(f"Successfully anchored {len(uploaded_files)} files to {target_dir}")
+                st.success(f"{len(uploaded_files)} files saved to {target_dir}")
 
         st.divider()
 
-        st.markdown("### 3. The Execution Engine")
-        st.write("Trigger the analytical modules. WARNING: Observe the 16GB RAM boundary.")
+        st.markdown("### 3. The Pipeline Execution")
+        st.write("Note: Matrix operations require atleast 16GB of available system memory.")
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            if st.button("Run Phase I (QC & Filter)"):
+            if st.button("Execute Filtering (P03)"):
                 target_dir = "data/raw/pbmc3k_filtered_gene_bc_matrices/hg19"
                 required_files = {
                     "matrix": {"matrix.mtx", "matrix.mtx.gz"},
@@ -295,7 +237,7 @@ def main() -> None:
                     "genes": {"genes.tsv", "genes.tsv.gz", "features.tsv", "features.tsv.gz"}
                 }
                 if not os.path.exists(target_dir):
-                    st.error("⛔ **Execution Blocked:** The workspace is purged. Upload files first.")
+                    st.error("Error: The workspace directory is empty. Upload input files to proceed.")
                 else:
                     actual_files = set(os.listdir(target_dir))
                     missing_files = []
@@ -303,20 +245,20 @@ def main() -> None:
                         if not acceptable_variants.intersection(actual_files):
                             missing_files.append(concept)
                     if missing_files:
-                        st.error(f"⛔ **Execution Blocked:** Missing files: {missing_files}.")
+                        st.error(f"Error: The following required files are missing from the directory: {missing_files}.")
                     else:
-                        with st.spinner("Executing QC filtering..."):
+                        with st.spinner("Processing matrix array..."):
                             try:
                                 P03_qc_filtering.main()
-                                st.success("Phase I Complete: pbmc3k_qc.h5ad anchored.")
+                                st.success("Filtering complete.")
                             except Exception as e:
                                 st.error(f"Phase I Failed: {e}")
 
         with col2:
             if not st.session_state.phase2_macro_swept:
-                if st.button("Run Phase II (Start: Macro Sweep)"):
+                if st.button("Execute Primary Clustering (P04)"):
                     if not os.path.exists("data/objects/pbmc3k_qc.h5ad"):
-                        st.error("⛔ **Execution Blocked:** Phase I output not found.")
+                        st.error("Error: Phase I output matrix not found.")
                     else:
                         with st.spinner("Computing initial neighborhood graph and Leiden clustering..."):
                             sweep_state = P04_clustering.execute_macro_sweep(
@@ -331,30 +273,26 @@ def main() -> None:
                             st.rerun()
             else:
                 if st.session_state.phase2_complete:
-                    st.success("Phase II Complete: All Topologies established.")
+                    st.success("Phase II complete: Clustering parameters established.")
                 else:
-                    st.warning("Pipeline Active: See Human Overrides below.")
+                    st.warning("Execution paused: Awaiting manual parameter confirmation.")
         with col3:
-            if st.button("Run Phase III (Markers)"):
+            if st.button("Execute Marker Evaluation (P05)"):
                 if not os.path.exists("data/objects/Dictionary_of_returns_from_orch_A.json"):
-                    st.error("⛔ **Execution Blocked:** Topological dictionaries not found.")
+                    st.error("Error: Phase II parameter output not found.")
                 else:
-                    with st.spinner("Extracting Biological Markers..."):
+                    with st.spinner("Processing matrix array..."):
                         try:
                             P05_top_markers.main()
-                            st.success("Phase III Complete: Telemetry Ready.")
+                            st.success("Marker evaluation complete.")
                         except Exception as e:
                             st.error(f"Phase III Failed: {e}")
 
-        # =====================================================================
-        # THE TEMPORAL AIRLOCKS (MACRO AND MICRO ITERATIONS)
-        # =====================================================================
-        
-        # AIRLOCK 1: THE MACRO LOCK
         if st.session_state.phase2_macro_swept and not st.session_state.phase2_macro_locked:
             st.divider()
-            st.markdown("### 🛑 Phase II: Human-in-the-Loop [MACRO-STATE]")
-            
+            st.markdown("### Manual Parameter Selection: Primary Clustering")
+            st.write("Review the suggested parameters and evaluate stability before confirming.")
+
             svg_file = "./results/figures/p04_clustering/macro_grid_search_surface.svg"
             if os.path.exists(svg_file):
                 with open(svg_file, "r", encoding="utf-8") as f:
@@ -365,7 +303,7 @@ def main() -> None:
                 img_src = f"data:image/svg+xml;base64,{b64_svg}"
                 st.markdown(f"<div style='border: 1px solid #444; padding: 10px; background: white;'><img src='{img_src}' style='width: 100%;'></div>", unsafe_allow_html=True)
 
-            # INTERACTIVE DRY-RUNS
+            
             c1, c2 = st.columns(2)
             with c1:
                 chosen_k = st.number_input("Optimal k (Neighbors)", value=int(st.session_state.p04_suggested_k), min_value=5, max_value=200, step=5, key="macro_k")
@@ -374,18 +312,18 @@ def main() -> None:
 
             col_test, col_lock = st.columns(2)
             
-            # THE DRY-RUN PROTOCOL
+            
             with col_test:
-                if st.button("🧪 Test Jaccard Stability (Dry-Run)", type="secondary", key="test_macro"):
-                    with st.spinner(f"Testing Jaccard Stability at k={chosen_k}, r={chosen_r}..."):
+                if st.button("Evaluate Parameters", type="secondary", key="test_macro"):
+                    with st.spinner(f"Evaluating Jaccard stability at k={chosen_k}, r={chosen_r}..."):
                         st.session_state.temp_jaccard_scores = P04_clustering.test_jaccard_stability(
                             st.session_state.p04_training_file_path, chosen_k, chosen_r
                         )
                         st.rerun()
 
-            # RENDER TELEMETRY IF IN RAM
+            
             if st.session_state.temp_jaccard_scores:
-                st.markdown("#### 📊 Simulated Jaccard Telemetry")
+                st.markdown("#### Jaccard Stability")
                 for cluster_id, score in st.session_state.temp_jaccard_scores.items():
                     if score >= 0.85:
                         st.success(f"Cluster {cluster_id}: {score:.3f} [HIGH STABILITY]")
@@ -395,11 +333,11 @@ def main() -> None:
                         st.error(f"Cluster {cluster_id}: {score:.3f} [LOW STABILITY]")
                 st.divider()
 
-            # THE PERMANENT LOCK PROTOCOL
+            
             with col_lock:
-                if st.button("🔒 Lock Macro Coordinates & Initiate Micro-Queue", type="primary", key="lock_macro"):
-                    with st.spinner("Saving primary clustering and subsetting distinct populations..."):
-                        st.session_state.temp_jaccard_scores = None # Flush test RAM
+                if st.button("Confirm Parameters", type="primary", key="lock_macro"):
+                    with st.spinner("Applying parameters and subsetting matrices..."):
+                        st.session_state.temp_jaccard_scores = None 
                         
                         macro_state = P04_clustering.lock_macro_and_extract_micro_queue(
                             st.session_state.p04_training_file_path, chosen_k, chosen_r, './data/regev_lab_cell_cycle_genes.txt'
@@ -412,28 +350,26 @@ def main() -> None:
                         st.session_state.phase2_macro_locked = True
                         st.rerun()
 
-        # AIRLOCK 2: THE MICRO LOOP
+        
         if st.session_state.phase2_macro_locked and not st.session_state.phase2_complete:
             st.divider()
             
-            # If we have items in the queue, process the next one
+            
             if len(st.session_state.micro_queue) > 0:
                 current_micro = st.session_state.micro_queue[0]
                 filepath = st.session_state.micro_filepaths_dict[current_micro]
                 
-                st.markdown(f"### 🛑 Phase II: Human-in-the-Loop [MICRO-STATE: `{current_micro}`]")
-                st.info(f"{len(st.session_state.micro_queue)} Micro-states remaining in queue.")
+                st.markdown(f"### Manual Parameter Selection: Sub-Cluster `{current_micro}`]")
+                st.info(f"{len(st.session_state.micro_queue)} Sub-Clusters remaining in queue.")
                 
-                # Step 2A: Automatically Sweep the current micro-state if not done yet
                 if not st.session_state.current_micro_swept:
-                    with st.spinner(f"Sweeping grid search surface for {current_micro}..."):
+                    with st.spinner(f"Evaluating parameters for {current_micro}..."):
                         micro_sweep = P04_clustering.execute_micro_sweep(filepath, current_micro, "./results/figures/p04_clustering")
                         st.session_state.current_micro_k = micro_sweep['suggested_k']
                         st.session_state.current_micro_r = micro_sweep['suggested_r']
                         st.session_state.current_micro_swept = True
                         st.rerun()
                 
-                # Step 2B: Display the Map and Wait for Human Input
                 if st.session_state.current_micro_swept:
                     svg_file = f"./results/figures/p04_clustering/{current_micro}_grid_search_surface.svg"
                     if os.path.exists(svg_file):
@@ -445,7 +381,6 @@ def main() -> None:
                         img_src = f"data:image/svg+xml;base64,{b64_svg}"
                         st.markdown(f"<div style='border: 1px solid #444; padding: 10px; background: white;'><img src='{img_src}' style='width: 100%;'></div>", unsafe_allow_html=True)
                     
-                    # REMOVED st.form TO ALLOW INTERACTIVE DRY-RUNS
                     c1, c2 = st.columns(2)
                     with c1:
                         chosen_k = st.number_input("Optimal k (Neighbors)", value=int(st.session_state.current_micro_k), min_value=5, max_value=200, step=5, key=f"k_{current_micro}")
@@ -454,18 +389,16 @@ def main() -> None:
 
                     col_test, col_lock = st.columns(2)
                     
-                    # THE DRY-RUN PROTOCOL
                     with col_test:
-                        if st.button("🧪 Test Jaccard Stability (Dry-Run)", type="secondary", key=f"test_{current_micro}"):
-                            with st.spinner(f"Testing Jaccard Stability for {current_micro} at k={chosen_k}, r={chosen_r}..."):
+                        if st.button("Evaluate Jaccard stability", type="secondary", key=f"test_{current_micro}"):
+                            with st.spinner(f"Evaluating Jaccard stability for {current_micro} at k={chosen_k}, r={chosen_r}..."):
                                 st.session_state.temp_jaccard_scores = P04_clustering.test_jaccard_stability(
                                     filepath, chosen_k, chosen_r
                                 )
                                 st.rerun()
 
-                    # RENDER TELEMETRY IF IN RAM
                     if st.session_state.temp_jaccard_scores:
-                        st.markdown(f"#### 📊 Simulated Jaccard Telemetry: {current_micro}")
+                        st.markdown(f"#### Jaccard Stability: {current_micro}")
                         for cluster_id, score in st.session_state.temp_jaccard_scores.items():
                             if score >= 0.85:
                                 st.success(f"Cluster {cluster_id}: {score:.3f} [HIGH STABILITY]")
@@ -475,11 +408,10 @@ def main() -> None:
                                 st.error(f"Cluster {cluster_id}: {score:.3f} [LOW STABILITY]")
                         st.divider()
 
-                    # THE PERMANENT LOCK PROTOCOL
                     with col_lock:
-                        if st.button(f"🔒 Lock {current_micro} & Proceed to Next", type="primary", key=f"lock_{current_micro}"):
+                        if st.button(f"Confirm Parameters:", type="primary", key=f"lock_{current_micro}"):
                             with st.spinner(f"Saving parameters for {current_micro}..."):
-                                st.session_state.temp_jaccard_scores = None # Flush test RAM
+                                st.session_state.temp_jaccard_scores = None 
                                 
                                 micro_result = P04_clustering.lock_micro_state(
                                     filepath, current_micro, chosen_k, chosen_r, './data/regev_lab_cell_cycle_genes.txt'
@@ -493,11 +425,11 @@ def main() -> None:
                                 st.session_state.current_micro_swept = False
                                 st.rerun()
             
-            # Step 3: If queue is empty, Seal the Pipeline
             else:
-                st.success("Micro-Queue Exhausted. All states locked.")
-                if st.button("Seal Pipeline and Execute Orchestrator B Projection", type="primary"):
-                    with st.spinner("Sealing final JSON ledgers and casting projections..."):
+                st.success("### Sub-Clustering Complete")
+                st.write("All matrix partitions have been successfully processed.")
+                if st.button("Finalize Sub-Clustering", type="primary"):
+                    with st.spinner("Exporting metadata dictionaries and finalizing Phase II..."):
                         P04_clustering.seal_phase_II_pipeline(
                             h5ad_path="data/objects/pbmc3k_qc.h5ad",
                             save_folder_path="data/objects",
@@ -513,39 +445,26 @@ def main() -> None:
                     
         st.divider()
 
-        st.markdown("### 4. Artifact Extraction")
-        st.write("Extract intermediate tensors before container hibernation.")
-        
-        qc_path = "data/objects/pbmc3k_qc.h5ad"
-        if os.path.exists(qc_path):
-            with open(qc_path, "rb") as f:
-                st.download_button(
-                    label="Download P03/P04 State (pbmc3k_qc.h5ad)",
-                    data=f,
-                    file_name="pbmc3k_qc_custom.h5ad",
-                    mime="application/octet-stream"
-                )
 
-    # --- TAB 3: VISUAL TELEMETRY ---
     pipeline_state_file = "data/objects/Dictionary_of_returns_from_orch_B.json"
-    with tab_telemetry:
+    with tab_plots:
         if not master_map:
-            st.info("📡 **Visual Telemetry Offline:** The workspace is currently sterile. Please ingest 10X matrices in the Control Room and execute Phases I through III to generate telemetry.")
+            st.info("Visualizations are not available until the matrix processing steps are complete.")
         else:
-            st.header("Pipeline Figures")
-            st.markdown("Select an analytical sector to project physical evidence onto the dashboard.")
+            st.header("Visual Outputs")
+            st.markdown("Select an output Category to show the visual plots")
  
             SECTOR_MAP = {
-                "Phase I: Quality Control (P03)": "p03_qc_filtering",
-                "Phase II: Topological Audits (P04)": "p04_clustering",
-                "Phase III: Marker Extractions (P05)": "p05_top_markers"
+                "Filtering": "p03_qc_filtering",
+                "Clustering": "p04_clustering",
+                "Markers": "p05_top_markers"
             }
 
             selection = st.selectbox(
-                "Select Analytical Sector", 
+                "Select Output Category", 
                 options=list(SECTOR_MAP.keys()),
                 index=0,
-                key="telemetry_sector_selector" # Unique key forces DOM isolation
+                key="telemetry_sector_selector" 
             )
 
             target_sub_dir = SECTOR_MAP[selection]
@@ -553,17 +472,16 @@ def main() -> None:
             st.caption(f"Scanning Physical Path: `./results/figures/{target_sub_dir}/`")
             st.divider()
             with st.container():
-                render_visual_telemetry(target_sub_dir, selection)
+                render_plots(target_sub_dir, selection)
             
-    # --- TAB 2: ANNOTATION ENGINE ---
     with tab_annotate:
         if not master_map:
-            st.info("✍️ **Annotation Engine Offline:** Awaiting structural topology. Execute the pipeline in the Control Room to unlock biological annotation.")
+            st.info("Annotation mapping unavailable: Waiting for clustering output. Execute the processing pipeline to enable this module.")
         else:
-            st.markdown("### Human-in-the-Loop Topology Verification & Mapping")
+            st.markdown("### Manual Annotation and Label Mapping")
             if active_path and active_label_key:
-                st.subheader(f"Interrogating Topology: `{active_label_key}`")
-                adata = load_tensor(active_path)
+                st.subheader(f"Active Cluster Key: `{active_label_key}`")
+                adata = load_anndata(active_path)
                 if adata is not None:
                     if 'final_top_genes_per_cluster' in adata.uns:
                         df_markers = adata.uns['final_top_genes_per_cluster']
@@ -576,16 +494,15 @@ def main() -> None:
                         if "Terminal_State" in active_path:
                             st.info(
                                 "**Terminal State Confirmed.**\n"
-                                "This micro-topology is mathematically homogeneous. Differential marker "
-                                "extraction requires at least two sub-clusters to calculate variance. "
-                                "Please refer to the parent Macro topology (`macro_leiden_2`) to view the "
-                                "defining thermodynamic markers for this lineage."
+                                "This sub-cluster is statistically homogeneous. Differential expression testing "
+                                "requires at least two groups to calculate variance. "
+                                "Refer to the parent clustering level to view marker genes for this lineage."
                             )
                         else:
-                            st.warning("Marker dictionary missing from active tensor. Execute Phase III `P05_top_markers.py`.")
+                            st.warning("Marker dictionary missing from the active matrix. Execute Phase III `P05_top_markers.py`.")
 
                     st.divider()
-                    st.markdown("### 🧬 Dual-Ledger Annotation Injection")
+                    st.markdown("### Annotation and Ontology Mapping")
                     
                     cluster_col = active_leiden if active_leiden else active_label_key
                     
@@ -614,7 +531,7 @@ def main() -> None:
                             
                         df_ui = pd.DataFrame(df_state)
                         
-                        st.markdown("Double-click a cell to edit. Press **Enter** to lock the value into transient memory.")
+                        st.markdown("Double-click a cell to edit. Press **Enter** to confirm the value.")
                         edited_df = st.data_editor(
                             df_ui, 
                             use_container_width=True, 
@@ -622,7 +539,7 @@ def main() -> None:
                             disabled=["Cluster ID"]
                         )
 
-                        if st.button("💾 Seal Dual Ledgers to Disk", type="primary"):
+                        if st.button("Save Annotation Dictionaries", type="primary"):
                             for _, row in edited_df.iterrows():
                                 c_id = row["Cluster ID"]
                                 label = row["Biological Identity"]
@@ -631,43 +548,43 @@ def main() -> None:
                                 st.session_state.annotations[active_label_key][c_id] = label
                                 st.session_state.ontologies[active_label_key][c_id] = cl_id
                                     
-                            save_json_ledger(ANNOTATION_PATH, st.session_state.annotations)
-                            save_json_ledger(ONTOLOGY_PATH, st.session_state.ontologies)
+                            save_json(ANNOTATION_PATH, st.session_state.annotations)
+                            save_json(ONTOLOGY_PATH, st.session_state.ontologies)
                             
-                            st.success("Ledgers mathematically fractured and written to disk. Ready for Phase IV Injection.")
+                            st.success("Annotation dictionaries saved to disk. Matrix is ready for metadata integration")
 
                         st.divider()
-                        st.markdown("### ⚙️ Phase IV: Artifact Recombination")
-                        st.markdown("Execute this strictly *after* you have completely populated and sealed the ledgers above.")
+                        st.markdown("### Phase IV: Matrix Metadata Integration")
+                        st.markdown("Execute this step only after all annotation dictionaries have been populated and saved.")
                         
-                        if st.button("🚀 Execute P06 & Generate ML Artifact", type="secondary"):
-                            with st.spinner("Injecting topologies and recombining global matrix..."):
+                        if st.button("Execute Metadata Integration (P06)", type="secondary"):
+                            with st.spinner("Integrating annotations and combining global matrix..."):
                                 try:
                                     
                                     P06_annotation.main()
-                                    st.success("Matrix successfully recombined and sealed!")
+                                    st.success("Matrix metadata integration complete.")
                                         
                                     ml_ready_path = "./data/objects/pbmc3k_qc_ML_Ready.h5ad"
                                     if op.exists(ml_ready_path):
                                         with open(ml_ready_path, "rb") as file:
                                             st.download_button(
-                                                label="⬇️ Download Final ML-Ready Matrix",
+                                                label="Download ML-Ready Matrix",
                                                 data=file,
                                                 file_name="pbmc3k_ML_Ready.h5ad",
                                                 mime="application/octet-stream"
                                             )
                                 except Exception as e:
-                                    st.error(f"P06 Execution Failed. Fracture detected:")
+                                    st.error(f"Execution error encountered during integration:")
                                     st.code(str(e))
                     else:
-                        st.error(f"[ERROR] Required observation column '{cluster_col}' missing from matrix.")
+                        st.error(f"Required observation column '{cluster_col}' missing from matrix.")
                 else:
-                    st.error(f"[ERROR] Failed to load matrix at physical path: {active_path}")
+                    st.error(f"Failed to load matrix at path: {active_path}")
 
             st.markdown("---")
-            st.markdown("### ⚠️ Engine Diagnostics & Memory Purge")
-            st.markdown("Execute this if the UI caches phantom annotations or ghost topologies from a previous run.") 
-            if st.button("🔥 PURGE ANNOTATION MEMORY (HARD RESET)", type="primary"):
+            st.markdown("### Session Memory Reset")
+            st.markdown("Execute this to clear cached annotations or clustering states from previous sessions.") 
+            if st.button("Reset Session Memory", type="primary"):
                 keys_to_destroy = [
                     key for key in st.session_state.keys() 
                     if "annotation" in key.lower() or "ontolog" in key.lower() or "dict" in key.lower()
