@@ -18,7 +18,7 @@ pinned: false
 - **Status:** Active 
 - **Objective:** Reproduce the PBMC dataset analysis using a semi-automated parameter review workflow.
 
-**⚠️Note: The current pipeline is restricted to single-donor data. Multi-donor batch integration is under development.**
+**Note: The current pipeline is restricted to single-donor data. Multi-donor batch integration is under development.**
 
 Standard pipelines were evaluated to validate methodologies. Computational parameters were explicitly defined and verified at each processing step.
 
@@ -98,7 +98,7 @@ This pipeline implements the following validation steps:
 
 ---
 
-### ⚙️ Environment Setup and Installation
+### Environment Setup and Installation
 
 To execute the pipeline locally:
 
@@ -132,7 +132,7 @@ make run
 
 ---
 
-## ⚠️ Note on Image Rendering Constraints
+## Note on Image Rendering Constraints
 This repository contains single-cell transcriptomic plots exported as scalable vector graphics (`.svg`). 
 
 Due to GitHub's Content Security Policy restricting SVG execution in the browser, these figures may not render natively in the online view of `report.md`.

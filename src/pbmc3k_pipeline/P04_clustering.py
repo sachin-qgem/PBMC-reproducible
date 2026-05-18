@@ -168,7 +168,7 @@ def calculate_jaccard_stability(
     
     original_labels = adata.obs[leiden_key].astype(str)
     unique_clusters = original_labels.unique()
-    jaccard_ledger = {cluster: [] for cluster in unique_clusters}
+    jaccard_scores_dict = {cluster: [] for cluster in unique_clusters}
     
     boot_k = max(2, int(k * subsample_fraction))
     
@@ -199,7 +199,7 @@ def calculate_jaccard_stability(
             orig_cells_in_sub = adata_sub.obs_names[mask]
             
             if len(orig_cells_in_sub) == 0:
-                jaccard_ledger[orig_cluster].append(0.0)
+                jaccard_scores_dict[orig_cluster].append(0.0)
                 continue
                 
             best_match_cluster = new_labels[orig_cells_in_sub].value_counts().index[0]
@@ -210,12 +210,12 @@ def calculate_jaccard_stability(
             union_len = len(set_A.union(set_B))
             jaccard_score = len(set_A.intersection(set_B)) / union_len if union_len > 0 else 0.0
             
-            jaccard_ledger[orig_cluster].append(jaccard_score)
+            jaccard_scores_dict[orig_cluster].append(jaccard_score)
             
         del adata_sub
         gc.collect()
     final_scores = {}
-    for cluster, scores in jaccard_ledger.items():
+    for cluster, scores in jaccard_scores_dict.items():
         final_scores[str(cluster)] = float(np.mean(scores))
         
     return final_scores
@@ -303,12 +303,12 @@ def compute_knn_umap_leiden(
         print(f"\n[LOG] Subsampling stability evaluation for '{key_name}'...")
         
         
-        jaccard_ledger = calculate_jaccard_stability(adata=adata_su_check,leiden_key=leiden_key,
+        jaccard_scores_dict = calculate_jaccard_stability(adata=adata_su_check,leiden_key=leiden_key,
                                                        k=n_neighbors,r=leiden_res,n_pcs=n_pcs)
         print(f" JACCARD UNCERTAINTY : {key_name} ---")
         
         
-        for orig_cluster, mean_score in jaccard_ledger.items():
+        for orig_cluster, mean_score in jaccard_scores_dict.items():
             if mean_score >= 0.85:
                 grade = "[HIGH STABILITY]"
             elif mean_score >= 0.60:
@@ -320,7 +320,7 @@ def compute_knn_umap_leiden(
             
             
         
-        adata.uns[f'{leiden_key}_SU_grades'] = jaccard_ledger
+        adata.uns[f'{leiden_key}_SU_grades'] = jaccard_scores_dict
         adata.write_h5ad(training_side_file_path)
         
     del adata, adata_su_check
@@ -448,30 +448,30 @@ def calculate_modularity_grid(
   
     df_metrics['area_norm'] = df_metrics['area'] / df_metrics['area'].max()
     df_metrics['elevation_norm'] = df_metrics['elevation'] / df_metrics['elevation'].max()
-    df_metrics['mesa_score'] = df_metrics['area_norm'] * df_metrics['elevation_norm']
+    df_metrics['stability_index'] = df_metrics['area_norm'] * df_metrics['elevation_norm']
     
    
-    target_n_clusters = int(df_metrics.loc[df_metrics['mesa_score'].idxmax()]['n_clusters'])
+    target_n_clusters = int(df_metrics.loc[df_metrics['stability_index'].idxmax()]['n_clusters'])
     
     df_winner = df[df['n_clusters'] == target_n_clusters]
-    df_flat_top = df_winner[df_winner['modularity'] >= df_winner['modularity'].median()].copy()
+    df_stable_subset = df_winner[df_winner['modularity'] >= df_winner['modularity'].median()].copy()
     
    
-    theoretical_k = df_flat_top['k_neighbors'].mean()
-    theoretical_r = df_flat_top['resolution_r'].mean()
+    theoretical_k = df_stable_subset['k_neighbors'].mean()
+    theoretical_r = df_stable_subset['resolution_r'].mean()
     
     k_min, k_max = df['k_neighbors'].min(), df['k_neighbors'].max()
     r_min, r_max = df['resolution_r'].min(), df['resolution_r'].max()
     
     
-    df_flat_top['dist'] = df_flat_top.apply(
+    df_stable_subset['dist'] = df_stable_subset.apply(
         lambda row: np.sqrt(
             ((row['k_neighbors'] - theoretical_k) / (k_max - k_min + 1e-9))**2 + 
             ((row['resolution_r'] - theoretical_r) / (r_max - r_min + 1e-9))**2
         ), axis=1
     )
     
-    anchor = df_flat_top.loc[df_flat_top['dist'].idxmin()]
+    anchor = df_stable_subset.loc[df_stable_subset['dist'].idxmin()]
     final_k = int(anchor['k_neighbors'])
     final_r = float(anchor['resolution_r'])
     

@@ -136,13 +136,13 @@ def rank_gene_groups_wilcoxon(
     df_new['local_Q93'] = df_new.groupby('group')['nlog10pval_adj'].transform(
         lambda x: calculate_adaptive_threshold(x, min_genes=3, base_quantile=quantile)
     )
-    df_new['violin_delta'] = df_new['pct_nz_group'] - df_new['pct_nz_reference']
+    df_new['expression_delta'] = df_new['pct_nz_group'] - df_new['pct_nz_reference']
     
     mask_1 = (df_new['nlog10pval_adj'] >= df_new['local_Q93'])
     df_mask_1 = df_new[mask_1].copy()
     
     df_mask_1_sorted = df_mask_1.sort_values(
-        by=['group', 'violin_delta'], ascending=[True, False]
+        by=['group', 'expression_delta'], ascending=[True, False]
     )
     df_final = df_mask_1_sorted.groupby('group').head(3).copy()
     

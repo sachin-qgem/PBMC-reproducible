@@ -18,7 +18,7 @@ import pandas as pd
 import scanpy as sc
 import streamlit as st
 
-st.set_page_config(page_title="PBMC Biological Observatory", layout="wide")
+st.set_page_config(page_title="PBMC Analysis Interface", layout="wide")
 
 from src.pbmc3k_pipeline import P03_qc_filtering, P04_clustering, P05_top_markers, P06_annotation
 
@@ -57,7 +57,7 @@ def initialize_session_state() -> None:
     if "phase2_complete" not in st.session_state:
         st.session_state.phase2_complete = False
 
-@st.cache_resource(show_spinner="Loading Heavy Tensor into RAM...")
+@st.cache_resource(show_spinner="Loading matrix into memory...")
 def load_anndata(filepath: str) -> Optional[ad.AnnData]:
     """
     Caches array data.
@@ -114,14 +114,14 @@ def render_plots(sub_dir: str, title: str) -> None:
                 css_container = "display: flex; justify-content: center; align-items: center; overflow: hidden; border: 1px solid rgba(128,128,128,0.2); border-radius: 5px; padding: 10px; margin-bottom: 10px; background-color: white;"
                 styled_svg = f"<div style='{css_container}'><img src='{img_src}' style='width: 100%; height: auto;' alt='{img_path.name}'></div>"
                 st.markdown(styled_svg, unsafe_allow_html=True)
-                st.caption(f"📍 {img_path.name}")
+                st.caption(f" {img_path.name}")
             else:
                 st.image(str(img_path), caption=img_path.name, use_container_width=True)
 
 
 def main() -> None:
     
-    st.title("🧬 PBMC Analysis Interface")
+    st.title(" PBMC Analysis Interface")
     
     initialize_session_state()
     
@@ -487,7 +487,7 @@ def main() -> None:
                         df_markers = adata.uns['final_top_genes_per_cluster']
                         st.markdown("**Top Extracted Genes Markers (Wilcoxon Rank-Sum)**")
                         st.dataframe(
-                            df_markers[['group', 'names', 'pvals_adj', 'logfoldchanges', 'violin_delta']], 
+                            df_markers[['group', 'names', 'pvals_adj', 'logfoldchanges', 'expression_delta']], 
                             use_container_width=True
                         )
                     else:

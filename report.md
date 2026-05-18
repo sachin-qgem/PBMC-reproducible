@@ -126,7 +126,7 @@ In principal component analysis (PCA), technical variance generates variance eig
 
 Graph-based community detection algorithms (like Leiden) rely heavily on two highly sensitive parameters: the scaffolding limit ($k$-nearest neighbors) and the leiden resolution ($r$). The standard industry practice of selecting these scalars via iterative "hit and trial" introduces severe human bias. To optimize parameters, a grid search was executed to map modularity.
 
-To correct this error, parameter stability was mapped by computing the structural Modularity ($Q$) across an extensive Cartesian grid of $k$ and $r$ coordinates. This generates a  matrix of resulting cluster counts. Instead of guessing, A grid search was executed across the parameter space for an optimal stability plateau—a spatial block (e.g., $2 \times 2$ or larger) where the number of discrete clusters remains entirely static despite aggressive perturbations in both $k$ and $r$. By generating contour and heat maps of this surface, we identify the physical centroid of this stable plateau. This narrowed the parameter selection to 2 or 3 options.
+To correct this error, parameter stability was mapped by computing the structural Modularity ($Q$) across an extensive Cartesian grid of $k$ and $r$ coordinates. This generates a  matrix of resulting cluster counts. Instead of guessing, A grid search was executed across the parameter space for an optimal parameter coordinate region (e.g., $2 \times 2$ or larger) where the number of discrete clusters remains entirely static despite aggressive perturbations in both $k$ and $r$. By generating contour and heat maps of this surface, we identify the geometric median of this stable parameter region. This narrowed the parameter selection to 2 or 3 options.
 
 **V. Cluster Stability Bootstrapping (Jaccard Overlap)**
 
@@ -216,7 +216,7 @@ The iterative subsetting of the matrix generated a nested structure of both acti
 
 The execution of the annotation pipeline operates in a three-stage protocol designed to prevent barcode duplication and ensure consistent label assignment.
 
-1. **Training Set Integration and Ledger Assembly (The $X_{train}$ Matrix):** The system loads the state dictionary for the primary training matrix ($X_{train}$). It iterates through every isolated macro and micro tensor currently on disk. For each physical file, the algorithm queries the human-populated JSON ledgers and injects the precise biological identities and CL IDs. Once localized mapping is complete, the pipeline generates a mapping of cell barcodes to biological identities and CL IDs `cell_barcode, manual_label, human_CL_ID` from each sub-matrix. These vectors are  aggregated and concatenated into a singular, central CSV ledger (`master_labels_df.csv`).
+1. **Training Set Integration and Ledger Assembly (The $X_{train}$ Matrix):** The system loads the state dictionary for the primary training matrix ($X_{train}$). It iterates through every isolated macro and micro tensor currently on disk. For each physical file, the pipeline parses the human-annotated JSON dictionaries and maps the corresponding biological identities and CL IDs. Once localized mapping is complete, the pipeline generates a mapping of cell barcodes to biological identities and CL IDs `cell_barcode, manual_label, human_CL_ID` from each sub-matrix. These vectors are  aggregated and concatenated into a singular, central CSV ledger (`master_labels_df.csv`).
     
 2. **Validation Set Integration (The $X_{project}$ Matrix):** The pipeline then loads the state dictionary for the out-of-sample projection matrix ($X_{project}$). It repeats the identical localized injection process. When appending the resulting validation vectors to the central CSV ledger, the system performs a deduplication check. If a barcode collision is detected (a highly improbable event under the current architecture, but a mandatory CRISP-DM robustness safeguard), the system isolates the conflict and prioritizes the most recent RAM state, finalizing the metadata of cell identities.
     
@@ -371,13 +371,13 @@ Bootstrapping (`jaccard scores`) was re-applied at the micro-level to evaluate b
 
 Following clustering, differential gene expression analysis was performed to identify cluster-specific marker genes for cell type annotation.
 
-**Differential Expression Analysis:** differential gene expression (DGE) profiling (`rank_genes_group`) was executed across the validated topology using the Wilcoxon rank-sum test. For each defined cluster, candidate marker genes were evaluated using a dual-metric approach: statistical significance via FDR-adjusted p-values (`pvals_adj`) and spatial expression exclusivity (`violin_delta`). To be considered as a candidate marker, a gene was required to meet a baseline significance threshold of an adjusted $p$-value < `0.05` and a minimum $\log_{2}$ fold-change of `1.0`. The most discriminative features (`top_genes`) were extracted to define the transcriptomic signature of each cluster.
+**Differential Expression Analysis:** differential gene expression (DGE) profiling (`rank_genes_group`) was executed across the validated topology using the Wilcoxon rank-sum test. For each defined cluster, candidate marker genes were evaluated using a dual-metric approach: statistical significance via FDR-adjusted p-values (`pvals_adj`) and spatial expression exclusivity (`expression_delta`). To be considered as a candidate marker, a gene was required to meet a baseline significance threshold of an adjusted $p$-value < `0.05` and a minimum $\log_{2}$ fold-change of `1.0`. The most discriminative features (`top_genes`) were extracted to define the transcriptomic signature of each cluster.
 
 **Cluster Filtering for Statistical Robustness:** To prevent false-positive annotations resulting from low cell counts or extreme data sparsity, an adaptive filtering threshold (`elastic threshold`) was applied to the DGE outputs. Clusters failing to meet the minimum threshold for cellular representation ($N \ge$ `10` cells) or lacking sufficient statistical confidence in their marker profiles were flagged as non-viable. This filtering retained  total of `24` high-confidence (`viable_states`) sub-clusters for downstream annotation.
 
 **Marker Extraction Metrics:**
 
-- **Major Cell Lineages:** Distinct macro-clusters exhibited strong transcriptional divergence. Marker genes defining these major lineages recorded adjusted p-values approaching the computational minimum ( `1.0e324`) and high spatial exclusivity, with `violin_delta` scores exceeding :
+- **Major Cell Lineages:** Distinct macro-clusters exhibited strong transcriptional divergence. Marker genes defining these major lineages recorded adjusted p-values approaching the computational minimum ( `1.0e324`) and high spatial exclusivity, with `expression_delta` scores exceeding :
 
 	- **Cluster 0:** `0.544`
 	    
@@ -389,7 +389,7 @@ Following clustering, differential gene expression analysis was performed to ide
 	    
 	- **Cluster 4:** `0.681`
     
-- **Sub-cluster Resolution:** Within closely related sub-clusters, highly specific markers demonstrated reduced `violin_delta` scores due to shared baseline expression. Marker genes distinguishing these related sub-types recorded `violin_delta` values ranging from: 
+- **Sub-cluster Resolution:** Within closely related sub-clusters, highly specific markers demonstrated reduced `expression_delta` scores due to shared baseline expression. Marker genes distinguishing these related sub-types recorded `expression_delta` values ranging from: 
     
 	- **Cluster 0:**  `0.144` to `0.799`
 	    
@@ -474,7 +474,7 @@ The hierarchical annotation of the dataset is detailed below:
             
 	- **Micro-Cluster 1.2:** `Tissue-Differentiating Macrophage (CL:0000235)`
         
-		-  **Lineage Markers:** `Lineage continuity with the mature circulating myeloid pool is preserved via the persistent topological bridges ZEB2 and CST3. However, the mathematical derivation of this discrete state is defined by a phenotypic shift: the attenuation of primary circulating anchors (LYZ and FTL dropping to moderate log-means near 2.0) coupled with the significant upregulation of TMEM106A. The high expression of TMEM106A structurally dictates advanced endolysosomal maturation, marking the transition from circulating monocytes and the initiation of tissue-resident macrophage differentiation. This physical structural rewiring is transcriptionally supported by the high-variance expression of SMOX (driving polyamine-mediated chromatin remodeling) and the amino acid transporter SLC16A10, isolating a distinct population undergoing active tissue-permeation and terminal macrophage commitment.`.
+		-  **Lineage Markers:** `Lineage continuity with the mature circulating myeloid pool is preserved via the persistent topological bridges ZEB2 and CST3. However, the mathematical derivation of this discrete state is defined by a phenotypic shift: the attenuation of primary circulating anchors (LYZ and FTL dropping to moderate log-means near 2.0) coupled with the significant upregulation of TMEM106A. The high expression of TMEM106A structurally dictates advanced endolysosomal maturation, marking the transition from circulating monocytes and the initiation of tissue-resident macrophage differentiation. This transcriptomic transition is further supported by the high-variance expression of SMOX (driving polyamine-mediated chromatin remodeling) and the amino acid transporter SLC16A10, isolating a distinct population undergoing active tissue-permeation and terminal macrophage commitment.`.
             
     - **Micro-Cluster 1.3:** `Activated / Hyper-Inflammatory Classical Monocyte (CL:0000860)`
         
