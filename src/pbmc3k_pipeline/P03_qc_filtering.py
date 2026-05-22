@@ -272,8 +272,8 @@ def execute_qc_pipeline(
         "total_counts", "n_genes_by_counts", "pct_counts_mt"
     )
     
-    adata_filtered = apply_quality_filters(adata)
-    adata_filtered = remove_multiplets(adata_filtered)
+    adata_filtered = remove_multiplets(adata)
+    adata_filtered = apply_quality_filters(adata_filtered)
     
     adata_filtered.layers['counts'] = adata_filtered.X.copy()
     
