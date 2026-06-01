@@ -10,7 +10,7 @@ app_file: app.py
 pinned: false
 ---
 
-# PBMC-reproducible: Automated Clustering and Marker Identification Pipeline
+# Deterministic scRNA-seq pipeline with automated parameter validation, Jaccard bootstrapping, and ML-ready (.h5ad) output. 
 - [![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.19335670-blue)](https://doi.org/10.5281/zenodo.19335670)
 - [![ORCID](https://img.shields.io/badge/ORCID-0009--0000--2744--6131-A6CE39?logo=orcid&logoColor=white)](https://orcid.org/0009-0000-2744-6131)
 - [![Report](https://img.shields.io/badge/Report-PDF-darkred?logo=adobeacrobatreader&logoColor=white)](report.pdf) [View the Full Analytical Thesis](report.pdf) 
