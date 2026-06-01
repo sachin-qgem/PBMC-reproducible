@@ -25,7 +25,7 @@ Standard pipelines were evaluated to validate methodologies. Computational param
 ---
 ### The Phases of Execution:
 
-#### ▶ Phase I: Quality Control & Preprocessing
+#### Phase I: Quality Control & Preprocessing
 
 - **Adaptive MAD Filtering**: Low-quality cells and technical artifacts were removed by applying a Median Absolute Deviation (MAD) threshold of 5 to mitochondrial percentage and total expressed genes. Ribosomal fractions were calculated but retained at this stage to preserve the variance baseline required for Pearson residual calculation.
     
@@ -36,7 +36,7 @@ Standard pipelines were evaluated to validate methodologies. Computational param
 - **Library Size Normalization Layer:** An additional layer was created here the raw count matrix was normalized via log1p-transformation and scaled to a target sum of 10,000 (1e4).
     
 
-#### ▶ Phase II: Dimensional Subspace Reduction and Clustering
+#### Phase II: Dimensional Subspace Reduction and Clustering
 
 - **Data Splitting (Train/Project)**: The dataset was divided equally (50/50) into training and projection subsets to prevent data leakage during downstream evaluation.
     
@@ -51,7 +51,7 @@ Standard pipelines were evaluated to validate methodologies. Computational param
 - **Holdout Projection**: The 50% holdout dataset was mapped onto the training reference using scanpy.ingest to evaluate cluster boundary generalization.
     
 
-#### ▶ Phase III: Differential Gene Expression (DGE) & Marker Extraction
+#### Phase III: Differential Gene Expression (DGE) & Marker Extraction
 
 - **Wilcoxon Rank-Sum Test**: Cluster-specific marker genes were calculated. Clusters containing fewer than 10 cells were excluded from DGE calculation.
     
@@ -66,7 +66,7 @@ Standard pipelines were evaluated to validate methodologies. Computational param
 - **Canonical Marker Validation:** Derived markers were evaluated against a pre-curated JSON dictionary of established biological markers.
     
 
-#### ▶ Phase IV: Annotation & Data Integration
+#### Phase IV: Annotation & Data Integration
 
 - **Manual Ontology Mapping:** Standardized Cell Ontology (CL) IDs were assigned to cluster indices within the calculated sub-matrices.
     
